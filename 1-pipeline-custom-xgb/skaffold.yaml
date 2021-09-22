@@ -1,0 +1,18 @@
+# 1. GOOGLE_APPLICATION_CREDENTIALS must be set
+# 2. "context" sets the local directory for each dockerfile
+# 3. use skaffold build, since skaffold dev/run expects a k8s cluster to deploy
+apiVersion: skaffold/v2beta5
+kind: Config
+build:
+  artifacts:
+    - image: europe-west4-docker.pkg.dev/windy-site-254307/ml-pipelines-repo/xgboost-fraud-detection-generatedata
+      context: 1-pipeline-custom-xgb/generatedata
+      docker:
+        dockerfile: ./Dockerfile
+    - image: europe-west4-docker.pkg.dev/windy-site-254307/ml-pipelines-repo/xgboost-fraud-detection-trainer
+      context: 1-pipeline-custom-xgb/train
+      docker:
+        dockerfile: ./Dockerfile
+  googleCloudBuild:
+    projectId: windy-site-254307
+    timeout: 3600s
