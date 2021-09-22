@@ -19,7 +19,6 @@ MY_STAGING_BUCKET = 'caip-prediction-custom-uscentral1'
 LOCATION = 'us-central1'
 USER='rafaelsanchez'
 PIPELINE_ROOT = 'gs://{}/pipeline_root/{}'.format(MY_STAGING_BUCKET, USER)
-API_KEY= 'AIzaSyA_DQYGM4fizy6oUAAhUOREJS4qOT3Uyos'
 BIGQUERY_URI = 'bq://windy-site-254307.public.ulb_'
 
 FEATURES = ["Amount", "V1", "V2","V3", "V4",

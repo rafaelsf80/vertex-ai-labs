@@ -20,7 +20,7 @@ Output of pipeline with GCP components:
 ![Vertex pipelines result](2-pipeline-gcp-operators/pipeline_gccaip.png)
 
 
-## Lab 3: 3-step pipeline with lightweight Python components and TensorFlow
+## Lab 3: three-step pipeline with lightweight Python components and TensorFlow
 
 Demo code of a production pipeline using Vertex Pipelines, and training a model using lightweight python components:
 
@@ -42,12 +42,12 @@ python3 -m pip install aiplatform_pipelines_client-0.1.0.caip20210415-py3-none-a
 ![Vertex pipelines result](3-pipeline-lwpython-tf/pipeline_lwpython.png)
 
 
-## Lab 4: 2-step pipeline with lightweight Python components and XGB
+## Lab 4: two-step pipeline with lightweight Python components and XGB
 
 Demo code of a production pipeline with the following services:
 
-* Vertex Pipelines
-* Vertex ML Metadata
+* **[Vertex Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction)**
+* **[Vertex ML Metadata](https://cloud.google.com/vertex-ai/docs/ml-metadata/introduction)**
 
 ![Vertex pipelines result](4-pipeline-lwpython-xgb/pipeline_lwpython_xgb.png)
 
@@ -61,4 +61,4 @@ For more information about custom training in Vertex, visit the [official docume
 
 ## Lab 6: Feature Store
 
-Create a Managed Feature Store, importaing data and batch serving.
+Create a Managed Feature Store, importaing data and online&batch serving.
