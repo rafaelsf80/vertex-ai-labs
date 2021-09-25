@@ -1,7 +1,7 @@
 from google.cloud import aiplatform
 
 MY_PROJECT = 'windy-site-254307'
-MY_STAGING_BUCKET = 'gs://caip-training-prediction-europewest4'
+MY_STAGING_BUCKET = 'gs://caip-vertex-europewest4'
 LOCATION = 'europe-west4'
 
 aiplatform.init(project=MY_PROJECT, staging_bucket=MY_STAGING_BUCKET, location=LOCATION)

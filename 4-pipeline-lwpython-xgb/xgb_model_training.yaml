@@ -840,7 +840,6 @@ implementation:
 
           import logging
 
-
           df = pd.read_csv(dataset.path)
           labels = df.pop("Class").tolist()
           data = df.values.tolist()
@@ -870,13 +869,13 @@ implementation:
           metrics.log_metric("dataset_size", len(df))
 
           # log the ROC curve
-          fpr = []
-          tpr = []
-          thresholds = []
-          y_scores = cross_val_predict(classifier, x_train, y_train, cv=3, method='predict_proba')
-          y_predict = cross_val_predict(classifier, x_train, y_train, cv=3, method='predict')
-          fpr, tpr, thresholds = roc_curve(y_true=y_train, y_score=y_scores[:,1], pos_label=True)
-          metricsc.log_roc_curve(fpr, tpr, thresholds)
+          # fpr = []
+          # tpr = []
+          # thresholds = []
+          # y_scores = cross_val_predict(classifier, x_train, y_train, cv=3, method='predict_proba')
+          # y_predict = cross_val_predict(classifier, x_train, y_train, cv=3, method='predict')
+          # fpr, tpr, thresholds = roc_curve(y_true=y_train, y_score=y_scores[:,1], pos_label=True)
+          # metricsc.log_roc_curve(fpr, tpr, thresholds)
 
           # log the confusion matrix
           predictions = model_selection.cross_val_predict(classifier, x_train, y_train, cv=3)

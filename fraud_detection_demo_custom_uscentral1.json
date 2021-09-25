@@ -1,0 +1,340 @@
+{
+  "pipelineSpec": {
+    "components": {
+      "comp-generatedata": {
+        "executorLabel": "exec-generatedata",
+        "inputDefinitions": {
+          "parameters": {
+            "experiment_name": {
+              "type": "STRING"
+            },
+            "gcs_dataset_filename": {
+              "type": "STRING"
+            },
+            "model_output_bucket": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "temp_bucket": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "X_test": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            },
+            "X_train": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            },
+            "y_test": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            },
+            "y_train": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            }
+          }
+        }
+      },
+      "comp-train": {
+        "executorLabel": "exec-train",
+        "inputDefinitions": {
+          "artifacts": {
+            "x_test": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            },
+            "x_train": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            },
+            "y_test": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            },
+            "y_train": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            }
+          },
+          "parameters": {
+            "experiment_name": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "xgboost_param_learning_rate": {
+              "type": "DOUBLE"
+            },
+            "xgboost_param_max_depth": {
+              "type": "INT"
+            },
+            "xgboost_param_n_estimators": {
+              "type": "INT"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "metrics": {
+              "artifactType": {
+                "schemaTitle": "system.Metrics"
+              }
+            },
+            "model": {
+              "artifactType": {
+                "schemaTitle": "system.Model"
+              }
+            }
+          }
+        }
+      }
+    },
+    "deploymentSpec": {
+      "executors": {
+        "exec-generatedata": {
+          "container": {
+            "args": [
+              "--project_id",
+              "{{$.inputs.parameters['project_id']}}",
+              "--temp_bucket",
+              "{{$.inputs.parameters['temp_bucket']}}",
+              "--gcs_dataset_filename",
+              "{{$.inputs.parameters['gcs_dataset_filename']}}",
+              "--model_output_bucket",
+              "{{$.inputs.parameters['model_output_bucket']}}",
+              "--experiment_name",
+              "{{$.inputs.parameters['experiment_name']}}",
+              "--x_train_uri",
+              "{{$.outputs.artifacts['X_train'].uri}}",
+              "--x_test_uri",
+              "{{$.outputs.artifacts['X_test'].uri}}",
+              "--y_train_uri",
+              "{{$.outputs.artifacts['y_train'].uri}}",
+              "--y_test_uri",
+              "{{$.outputs.artifacts['y_test'].uri}}"
+            ],
+            "command": [
+              "python3",
+              "/app/generatedata_script.py"
+            ],
+            "image": "gcr.io/windy-site-254307/xgboost-fraud-detection-generatedata:fcee0b6-dirty"
+          }
+        },
+        "exec-train": {
+          "container": {
+            "args": [
+              "--project_id",
+              "{{$.inputs.parameters['project_id']}}",
+              "--experiment_name",
+              "{{$.inputs.parameters['experiment_name']}}",
+              "--xgboost_param_max_depth",
+              "{{$.inputs.parameters['xgboost_param_max_depth']}}",
+              "--xgboost_param_learning_rate",
+              "{{$.inputs.parameters['xgboost_param_learning_rate']}}",
+              "--xgboost_param_n_estimators",
+              "{{$.inputs.parameters['xgboost_param_n_estimators']}}",
+              "--x_train_uri",
+              "{{$.inputs.artifacts['x_train'].uri}}",
+              "--x_test_uri",
+              "{{$.inputs.artifacts['x_test'].uri}}",
+              "--y_train_uri",
+              "{{$.inputs.artifacts['y_train'].uri}}",
+              "--y_test_uri",
+              "{{$.inputs.artifacts['y_test'].uri}}",
+              "--output_model_uri",
+              "{{$.outputs.artifacts['model'].uri}}",
+              "--output_metrics_uri",
+              "{{$.outputs.artifacts['metrics'].uri}}"
+            ],
+            "command": [
+              "python3",
+              "/app/trainer_script.py"
+            ],
+            "image": "gcr.io/windy-site-254307/xgboost-fraud-detection-trainer:fcee0b6-dirty",
+            "resources": {
+              "accelerator": {
+                "count": "1",
+                "type": "NVIDIA_TESLA_K80"
+              },
+              "cpuLimit": 4.0,
+              "memoryLimit": 15.032385536
+            }
+          }
+        }
+      }
+    },
+    "pipelineInfo": {
+      "name": "fraud-detection-demo-custom-uscentral1"
+    },
+    "root": {
+      "dag": {
+        "outputs": {
+          "artifacts": {
+            "train-metrics": {
+              "artifactSelectors": [
+                {
+                  "outputArtifactKey": "metrics",
+                  "producerSubtask": "train"
+                }
+              ]
+            }
+          }
+        },
+        "tasks": {
+          "generatedata": {
+            "componentRef": {
+              "name": "comp-generatedata"
+            },
+            "inputs": {
+              "parameters": {
+                "experiment_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "exp01"
+                    }
+                  }
+                },
+                "gcs_dataset_filename": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "gs://financial_fraud_detection/fraud_data_kaggle.csv"
+                    }
+                  }
+                },
+                "model_output_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "caip-pipelines-xgb-demo-fraud-detection-uscentral1"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "windy-site-254307"
+                    }
+                  }
+                },
+                "temp_bucket": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "caip-pipelines-xgb-demo-fraud-detection-uscentral1"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "generatedata"
+            }
+          },
+          "train": {
+            "componentRef": {
+              "name": "comp-train"
+            },
+            "dependentTasks": [
+              "generatedata"
+            ],
+            "inputs": {
+              "artifacts": {
+                "x_test": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "X_test",
+                    "producerTask": "generatedata"
+                  }
+                },
+                "x_train": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "X_train",
+                    "producerTask": "generatedata"
+                  }
+                },
+                "y_test": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "y_test",
+                    "producerTask": "generatedata"
+                  }
+                },
+                "y_train": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "y_train",
+                    "producerTask": "generatedata"
+                  }
+                }
+              },
+              "parameters": {
+                "experiment_name": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "exp01"
+                    }
+                  }
+                },
+                "project_id": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "windy-site-254307"
+                    }
+                  }
+                },
+                "xgboost_param_learning_rate": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "0.2"
+                    }
+                  }
+                },
+                "xgboost_param_max_depth": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "10"
+                    }
+                  }
+                },
+                "xgboost_param_n_estimators": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "200"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "train"
+            }
+          }
+        }
+      },
+      "outputDefinitions": {
+        "artifacts": {
+          "train-metrics": {
+            "artifactType": {
+              "schemaTitle": "system.Metrics"
+            }
+          }
+        }
+      }
+    },
+    "schemaVersion": "2.0.0",
+    "sdkVersion": "kfp-1.6.1"
+  },
+  "runtimeConfig": {}
+}

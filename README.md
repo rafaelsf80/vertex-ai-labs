@@ -1,20 +1,21 @@
 # Vertex AI LABS
 
 This repository contains sample codes for Vertex AI, including pipelines, metadata and more.
+Setup and authentication instructions of Vertex SDK are available [here](https://cloud.google.com/vertex-ai/docs/start/client-libraries). Please, complete those before trying any of the labs below.
 
 
-## Lab 1: Pipeline with custom containers
+## Lab 1: two-step pipeline with custom containers
 
-This pipeline uses a public dataset at:
-[gs://financial_fraud_detection/fraud_data_kaggle.csv](gs://financial_fraud_detection/fraud_data_kaggle.csv)
+This pipeline uses a public dataset at 
+[gs://financial_fraud_detection/fraud_data_kaggle.csv](gs://financial_fraud_detection/fraud_data_kaggle.csv) to run a two-step pipeline using custom containers. The Dockerfile definition of each container as well as the code is separated in each directory.
 
 Output of pipeline with custom containers:
 ![Vertex pipelines result](1-pipeline-custom-xgb/pipeline_custom.png)
 
 
-## Lab 2: Pipeline with GCP operators
+## Lab 2: three-step pipeline with GCP operators
 
-Training a tabular detaset (fraud detection) with AutoML.
+This pipeline uses the same public dataset as Lab 1 (tabular detaset, fraud detection) with AutoML, using GCP operators. The three-step pipeline include loading data, training and prediction.
 
 Output of pipeline with GCP components:
 ![Vertex pipelines result](2-pipeline-gcp-operators/pipeline_gccaip.png)
@@ -61,4 +62,13 @@ For more information about custom training in Vertex, visit the [official docume
 
 ## Lab 6: Feature Store
 
-Create a Managed Feature Store, importaing data and online&batch serving.
+Create a Managed Feature Store, importing data and online&batch serving.
+
+
+## References
+
+[1] Notebook samples about Vertex AI (part 1): https://github.com/GoogleCloudPlatform/vertex-ai-samples/tree/master/notebooks  
+[2] Notebooks samples about Vertex AI (part 2): https://github.com/GoogleCloudPlatform/cloudml-samples/tree/master/notebooks  
+[3] Codelab Intro to Vertex Pipelines: https://codelabs.developers.google.com/vertex-pipelines-intro  
+[4] Codelab Vertex pipelines and metadata: https://codelabs.developers.google.com/vertex-mlmd-pipelines  
+[5] Practitioners guide to MLOps: https://cloud.google.com/resources/mlops-whitepaper
