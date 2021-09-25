@@ -1,0 +1,28 @@
+{
+    "version": "2.0.0",
+    "options": {
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/1-pipeline-custom-xgb/generatedata/keyfile.json"
+      }
+    },
+    "tasks": [
+      {
+        "label": "artifact_registry_authenticate",
+        "command": "gcloud auth configure-docker europe-west4-docker.pkg.dev"
+      },
+      {
+        "label": "skaffold_build",
+        "command": "skaffold", "args": ["build", "--filename", "1-pipeline-custom-xgb/skaffold.yaml"],
+        "options": {
+          "env": {
+                "PATH": "/Users/rafaelsanchez/google-cloud-sdk/bin:${env:PATH}",
+                "GOOGLE_APPLICATION_CREDENTIALS": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/1-pipeline-custom-xgb/generatedata/keyfile.json"
+          }
+        }         
+      },
+      {
+        "label": "All_Tasks",
+        "dependsOn": ["skaffold_build"]
+      }
+    ]
+} 

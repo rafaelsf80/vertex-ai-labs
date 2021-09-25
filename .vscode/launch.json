@@ -1,0 +1,115 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "1-pipeline-custom",
+            "type": "python",
+            "request": "launch",
+            "preLaunchTask": "All_Tasks", // Build containers first
+            "program": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/1-pipeline-custom-xgb/pipeline.py", 
+            "console": "integratedTerminal",
+            "args": [],
+            "env": {
+                "GOOGLE_APPLICATION_CREDENTIALS": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/1-pipeline-custom-xgb/generatedata/keyfile.json",
+                "GRPC_DEFAULT_SSL_ROOTS_FILE_PATH": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/roots.pem"
+            }
+        },
+        {
+            "name": "2-pipeline-gcp-operators",
+            "type": "python",
+            "request": "launch",
+            "program": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/2-pipeline-gcp-operators/pipeline.py", 
+            "console": "integratedTerminal",
+            "args": [],
+            "env": {
+                "GOOGLE_APPLICATION_CREDENTIALS": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/1-pipeline-custom-xgb/generatedata/keyfile.json",
+                "GRPC_DEFAULT_SSL_ROOTS_FILE_PATH": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/roots.pem"
+            }
+        },
+        {
+            "name": "3-pipeline-lwpython-tf",
+            "type": "python",
+            "request": "launch",
+            "program": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/3-pipeline-lwpython-tf/pipeline.py", 
+            "console": "integratedTerminal",
+            "args": [],
+            "env": {
+                "GOOGLE_APPLICATION_CREDENTIALS": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/1-pipeline-custom-xgb/generatedata/keyfile.json",
+                "GRPC_DEFAULT_SSL_ROOTS_FILE_PATH": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/roots.pem"
+            }
+        },
+        {
+            "name": "4-pipeline-lwpython-xgb",
+            "type": "python",
+            "request": "launch",
+            "program": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/4-pipeline-lwpython-xgb/pipeline.py", 
+            "console": "integratedTerminal",
+            "args": [],
+            "env": {
+                "GOOGLE_APPLICATION_CREDENTIALS": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/1-pipeline-custom-xgb/generatedata/keyfile.json",
+                "GRPC_DEFAULT_SSL_ROOTS_FILE_PATH": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/roots.pem"
+            }
+        },
+        {
+            "name": "4-pipeline-dev",
+            "type": "python",
+            "request": "launch",
+            "program": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/4-pipeline-lwpython-xgb/pipeline_dev.py", 
+            "console": "integratedTerminal",
+            "args": [],
+            "env": {
+                "GOOGLE_APPLICATION_CREDENTIALS": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/1-pipeline-custom-xgb/generatedata/keyfile.json",
+                "GRPC_DEFAULT_SSL_ROOTS_FILE_PATH": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/roots.pem"
+            }
+        },
+        {
+            "name": "5-training-tables-iris",
+            "type": "python",
+            "request": "launch",
+            "program": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/5-training-tables-iris/mbsdk_all.py", 
+            "console": "integratedTerminal",
+            "args": [],
+            "env": {
+                "GOOGLE_APPLICATION_CREDENTIALS": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/1-pipeline-custom-xgb/generatedata/keyfile.json",
+                "GRPC_DEFAULT_SSL_ROOTS_FILE_PATH": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/roots.pem"
+            }
+        },
+        {
+            "name": "xgboost_new",
+            "type": "python",
+            "request": "launch",
+            "program": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/featurestore-xgb/xgboost_new.py", 
+            "console": "integratedTerminal",
+            "args": ["--project_id", "windy-site-254307", "--temp_bucket", "caip-pipelines-xgb-demo-uscentral1", "--bq_dataset", "YOUR_DATASET_NAME",
+                "--bq_table", "enrich_operaciones_ts_5000", "--bq_sql_extract", "", "--model_output_bucket", "caip-pipelines-xgb-demo-uscentral1"],
+            "env": {
+                "GOOGLE_APPLICATION_CREDENTIALS": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/1-pipeline-custom-xgb/generatedata/keyfile.json",
+                "GRPC_DEFAULT_SSL_ROOTS_FILE_PATH": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/roots.pem"
+            }
+        },
+        {
+            "name": "fs_create_import",
+            "type": "python",
+            "request": "launch",
+            "program": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/featurestore-xgb/fs_create_and_import.py", 
+            "console": "integratedTerminal",
+            "args": [],
+            "env": {
+                "GOOGLE_APPLICATION_CREDENTIALS": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/1-pipeline-custom-xgb/keyfile.json",
+                "GRPC_DEFAULT_SSL_ROOTS_FILE_PATH": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/roots.pem"
+            }
+        },
+        {
+            "name": "fs_batch_serving",
+            "type": "python",
+            "request": "launch",
+            "program": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/featurestore-xgb/fs_batch_serving.py", 
+            "console": "integratedTerminal",
+            "args": [],
+            "env": {
+                "GOOGLE_APPLICATION_CREDENTIALS": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/1-pipeline-custom-xgb/generatedata/keyfile.json",
+                "GRPC_DEFAULT_SSL_ROOTS_FILE_PATH": "/Users/rafaelsanchez/git/vertex-labs-EXTERNAL/roots.pem"
+            }
+        }
+    ]
+}
