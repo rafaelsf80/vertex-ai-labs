@@ -1,3 +1,4 @@
+from google.cloud import aiplatform
 import kfp
 from kfp.v2 import compiler
 
@@ -70,6 +71,7 @@ def pipeline():
 
 
 # Compile and run the pipeline
+aiplatform.init(project=PROJECT_ID)
 compiler.Compiler().compile(pipeline_func=pipeline, 
         package_path='fraud_detection_demo_gccaip_uscentral1.json')
  

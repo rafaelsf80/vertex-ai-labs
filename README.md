@@ -1,7 +1,15 @@
 # Vertex AI LABS
 
-This repository contains sample codes for Vertex AI, including pipelines, metadata and more.
+This repository contains sample codes for Vertex AI, including pipelines, metadata and more.  
 Setup and authentication instructions of Vertex SDK are available [here](https://cloud.google.com/vertex-ai/docs/start/client-libraries). Please, complete those before trying any of the labs below.
+
+Sample codes include pipelines, custom training and others. There are three ways to build components in a pipeline:
+
+1. **Docker containers as Components**: most complex. You must write a component `yaml`, that tells the runner how to execute your docker container. You can find a sample in **Lab 1**.
+
+2. **Python scripts as Components**: you must write a Python script and package it in a container.  Then write a component yaml, which tells the system how to execute your component. You can find a sample in **Lab 2**.
+
+3. **Python functions as Component**: easiest way. Use the `@dsl.component` in KFP v2 to package a python function as a component. You can find some samples in **Labs 3 and 4**.
 
 
 ## Lab 1: two-step pipeline with custom containers
