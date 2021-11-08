@@ -238,6 +238,7 @@ def pipeline(message: str):
     bigquery_uri=BIGQUERY_URI, 
     target_input=TARGET, 
     features_input=','.join(FEATURES)) # Converts list to string
+
   train_task = train(
     #dataset=preprocess_task.outputs['output_dataset'],
     dataset=preprocess_task.output,

@@ -61,17 +61,108 @@ Demo code of a production pipeline with the following services:
 ![Vertex pipelines result](4-pipeline-lwpython-xgb/pipeline_lwpython_xgb.png)
 
 
-## Lab 5: simple Vertex custom training job (Iris dataset)
+## Lab 5: Simple TFX pipeline with Vertex training and prediction components
+
+Creates a three component penguin pipeline with TFX. You need these frameworks and in these versions:
+```
+TensorFlow version: 2.6.0
+TFX version: 1.3.0
+KFP version: 1.8.2
+```
+
+![TFX pipeline on Vertex](5-pipeline-tfx-vertex/pipeline.png)
+
+
+## Lab 6: Cloud Pub/Sub to trigger a pipeline based on Vertex monitoring alerts
+
+Lab 6 uses Cloud Scheduler and Pub/Sub to trigger a Cloud Function, which retrains a pipeline. The pipeline is called only if there are **active alerts** in the Vertex Model Monitoring service.
+
+Setup: 
+1. First, you need to train a model for the first time (churn model) running the `retraining.py` pipeline. Note `endpoint` parameter empty. The same retraining pipeline will be launched later from the Cloud Function.
+2. Second, you need to create and trigger a monitor alert with `monitor-create.py` and `monitor-trigger.py` (modify the `ENDPOINT_ID` with the model trained from the pipeline). Note that today **Model Monitoring** is only capable to send email notification alerts when any skews are detected. If you want to automatize this, please note also that usually those skews or drifts requires human interaction for troubleshooting or decision making on the retraining. For example, a skew could be caused by a security attack.
+3. Finally, create the automatization: create a Cloud Scheduler and a Cloud Function triggered by Pub/Sub. The code for the function is in the `main.py` code provided. Modify the `ENDPOINT` and `MONITORING_JOB` parameters in `config.json`. The cloud function will retrain the pipeline using the pipeline definition file (`retraining-demo-uscentral1.json`) with a new model in 80/20% split configuration **only if there are alert in the endpoint**.
+
+The retraining process from the cloud function is governed by a config file `config.json` that contains key parameters for the pipeline as well as a boolean variable (default is `true`) to decide if the pipeline will be executed or not.
+Note two files must be uploaded to GCS for the retraining:
+1. `retraining-demo-uscentral1.json`: pipeline definition file.
+2. `config.json`: configuration file for the Cloud Function. This config file allows to make relevant changes on key parameters without modifying the Cloud Function or the pipeline code.
+
+Cloud Scheduler is configured with frequency `0 9 * * *` (see [other sample schedules](https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules#sample_schedules)), i.e. one execution every day at 9am that will run the Cloud Function.
+
+![Retraining pipeline](6-pipeline-retraining/architecture.png)
+
+FAQ:
+* In case you get this error when creating the **Model monitoring job**, add the `bigquery insert` permission to the service account.
+```
+Error message:
+Permission denied for account service-XXXXXXX@gcp-sa-aiplatform.iam.gserviceaccount.com to Insert BigQuery Job.
+```
+* To get the list of monitoring jobs and their ids:
+```sh
+gcloud beta ai model-monitoring-jobs list --project=<YOUR_PROJECT_ID>
+--------
+analysisInstanceSchemaUri: gs://cloud-ai-platform-abc42042-bdf5-4c28-864c-213c408e7d49/instance_schemas/job-245487961133547520/analysis
+bigqueryTables:
+- bigqueryTablePath: bq://windy-site-254307.model_deployment_monitoring_7369586636331417600.serving_predict
+  logSource: SERVING
+  logType: PREDICT
+createTime: '2021-10-22T13:47:27.752348Z'
+displayName: churn
+endpoint: projects/655797269815/locations/us-central1/endpoints/7369586636331417600
+logTtl: 0s
+loggingSamplingStrategy:
+  randomSampleConfig:
+    sampleRate: 0.8
+modelDeploymentMonitoringObjectiveConfigs:
+- deployedModelId: '2508443419794210816'
+  objectiveConfig:
+    predictionDriftDetectionConfig:
+      driftThresholds:
+        cnt_user_engagement:
+          value: 0.5
+        country:
+          value: 0.001
+        language:
+          value: 0.001
+    trainingDataset:
+      bigquerySource:
+        inputUri: bq://mco-mm.bqmlga4.train
+      targetField: churned
+    trainingPredictionSkewDetectionConfig:
+      skewThresholds:
+        cnt_user_engagement:
+          value: 0.5
+        country:
+          value: 0.001
+        language:
+          value: 0.001
+modelDeploymentMonitoringScheduleConfig:
+  monitorInterval: 3600s
+modelMonitoringAlertConfig:
+  emailAlertConfig:
+    userEmails:
+    - rafaelsanchez@google.com
+name: projects/655797269815/locations/us-central1/modelDeploymentMonitoringJobs/245487961133547520
+nextScheduleTime: '2021-10-25T10:00:00Z'
+predictInstanceSchemaUri: gs://cloud-ai-platform-abc42042-bdf5-4c28-864c-213c408e7d49/instance_schemas/job-245487961133547520/predict
+scheduleState: OFFLINE
+state: JOB_STATE_RUNNING
+statsAnomaliesBaseDirectory:
+  outputUriPrefix: gs://cloud-ai-platform-abc42042-bdf5-4c28-864c-213c408e7d49/model_monitoring/job-245487961133547520
+updateTime: '2021-10-25T09:15:55.176995Z'
+```
+
+
+## Lab 7: Feature Store
+
+Create a Managed Feature Store, importing data and online and batch serving.
+
+
+## Lab 8: simple Vertex custom training job (Iris dataset)
 
 Simple Vertex custom training job, usingTensorFlow pre-built custom containers (for training and serving) and the [tabular iris dataset](https://archive.ics.uci.edu/ml/datasets/iris).
 
 For more information about custom training in Vertex, visit the [official documentation](https://cloud.google.com/vertex-ai/docs/training/custom-training) and [this github repo](https://github.com/rafaelsf80/vertex-custom-training)
-
-
-## Lab 6: Feature Store
-
-Create a Managed Feature Store, importing data and online&batch serving.
-
 
 ## References
 
@@ -79,4 +170,5 @@ Create a Managed Feature Store, importing data and online&batch serving.
 [2] Notebooks samples about Vertex AI (part 2): https://github.com/GoogleCloudPlatform/cloudml-samples/tree/master/notebooks  
 [3] Codelab Intro to Vertex Pipelines: https://codelabs.developers.google.com/vertex-pipelines-intro  
 [4] Codelab Vertex pipelines and metadata: https://codelabs.developers.google.com/vertex-mlmd-pipelines  
-[5] Practitioners guide to MLOps: https://cloud.google.com/resources/mlops-whitepaper
+[5] Practitioners guide to MLOps: https://cloud.google.com/resources/mlops-whitepaper  
+[6] Feature attributions in model monitoring: https://cloud.google.com/blog/topics/developers-practitioners/monitoring-feature-attributions-how-google-saved-one-largest-ml-services-trouble
