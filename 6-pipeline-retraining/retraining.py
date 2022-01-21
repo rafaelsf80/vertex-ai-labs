@@ -451,7 +451,7 @@ compiler.Compiler().compile(pipeline_func=pipeline,
 
 
 # You do not run the pipeline here. You must upload the JSON pipeline definition file to the Cloud Fcuntion instead
-#PIPELINE_ROOT='gs://vertex-retraining-demo-uscentral1'
+PIPELINE_ROOT='gs://vertex-retraining-demo-uscentral1'
 # from google.cloud.aiplatform import pipeline_jobs
 # pipeline_jobs.PipelineJob(
 #     display_name='retraining-demo-uscentral1',

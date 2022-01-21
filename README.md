@@ -80,14 +80,14 @@ Lab 6 uses Cloud Scheduler and Pub/Sub to trigger a Cloud Function, which retrai
 Setup: 
 1. First, you need to train a model for the first time (churn model) running the `retraining.py` pipeline. Note `endpoint` parameter empty. The same retraining pipeline will be launched later from the Cloud Function.
 2. Second, you need to create and trigger a monitor alert with `monitor-create.py` and `monitor-trigger.py` (modify the `ENDPOINT_ID` with the model trained from the pipeline). Note that today **Model Monitoring** is only capable to send email notification alerts when any skews are detected. If you want to automatize this, please note also that usually those skews or drifts requires human interaction for troubleshooting or decision making on the retraining. For example, a skew could be caused by a security attack.
-3. Finally, create the automatization: create a Cloud Scheduler and a Cloud Function triggered by Pub/Sub. The code for the function is in the `main.py` code provided. Modify the `ENDPOINT` and `MONITORING_JOB` parameters in `config.json`. The cloud function will retrain the pipeline using the pipeline definition file (`retraining-demo-uscentral1.json`) with a new model in 80/20% split configuration **only if there are alert in the endpoint**.
+3. Finally, create the automatization: create a Cloud Scheduler and a Cloud Function triggered by Pub/Sub. The code for the function is in the `main.py` code provided. Modify the `ENDPOINT` and `MONITORING_JOB` parameters in `config.json`. The cloud function will retrain the pipeline using the pipeline definition file (`retraining-demo-uscentral1.json`) with a new model in 80/20 split configuration **only if there are alerts in the endpoint**.
 
-The retraining process from the cloud function is governed by a config file `config.json` that contains key parameters for the pipeline as well as a boolean variable (default is `true`) to decide if the pipeline will be executed or not.
-Note two files must be uploaded to GCS for the retraining:
+The retraining process from the cloud function is governed by a config file `config.json` that contains some parameters for the pipeline as well as a boolean variable (default is `true`) to decide if the pipeline will be executed or not, independently of the alert.
+As stated before, two files must be uploaded to GCS for the retraining:
 1. `retraining-demo-uscentral1.json`: pipeline definition file.
 2. `config.json`: configuration file for the Cloud Function. This config file allows to make relevant changes on key parameters without modifying the Cloud Function or the pipeline code.
 
-Cloud Scheduler is configured with frequency `0 9 * * *` (see [other sample schedules](https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules#sample_schedules)), i.e. one execution every day at 9am that will run the Cloud Function.
+Cloud Scheduler is configured with frequency `0 9 * * *` (see other sample schedules [here](https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules#sample_schedules)), i.e. one execution every day at 9am that will run the Cloud Function.
 
 ![Retraining pipeline](6-pipeline-retraining/architecture.png)
 
@@ -100,7 +100,7 @@ Permission denied for account service-XXXXXXX@gcp-sa-aiplatform.iam.gserviceacco
 * To get the list of monitoring jobs and their ids:
 ```sh
 gcloud beta ai model-monitoring-jobs list --project=<YOUR_PROJECT_ID>
---------
+#######
 analysisInstanceSchemaUri: gs://cloud-ai-platform-abc42042-bdf5-4c28-864c-213c408e7d49/instance_schemas/job-245487961133547520/analysis
 bigqueryTables:
 - bigqueryTablePath: bq://windy-site-254307.model_deployment_monitoring_7369586636331417600.serving_predict

@@ -16,7 +16,7 @@ from google.cloud.aiplatform_v1beta1.types.model_monitoring import (
 from datetime import datetime
 
 #### MODIFY ENDPOINT_ID
-ENDPOINT_ID = 'projects/655797269815/locations/us-central1/endpoints/2935792803185164288' 
+ENDPOINT_ID = 'projects/655797269815/locations/us-central1/endpoints/8576410598978355200' 
 
 TIMESTAMP = datetime.now().strftime("%Y%m%d%H%M%S") 
 PROJECT_ID = 'windy-site-254307'
@@ -67,7 +67,7 @@ objective_configs = [ModelDeploymentMonitoringObjectiveConfig(
 print(endpoint.resource_name)
 
 job = ModelDeploymentMonitoringJob(
-    display_name=PROJECT_ID + "-monitoring-" + TIMESTAMP,
+    display_name=PROJECT_ID + "-" + TIMESTAMP,
     endpoint=endpoint.resource_name,
     model_deployment_monitoring_objective_configs=objective_configs,
     logging_sampling_strategy=sampling_config,

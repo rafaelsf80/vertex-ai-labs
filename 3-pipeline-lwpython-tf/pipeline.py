@@ -253,6 +253,7 @@ def pipeline(message: str):
 from kfp.v2 import compiler
 from google.cloud.aiplatform import pipeline_jobs
 
+
 compiler.Compiler().compile(pipeline_func=pipeline,                                                     
   package_path='3-pipeline-lwpython-tf/demo-lw-pipeline-tf.json')
 

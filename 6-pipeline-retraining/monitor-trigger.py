@@ -11,7 +11,7 @@ import time
 SAMPLE_CSV_FILE = './000000000000.csv'
 
 #### MODIFY ENDPOINT_ID
-ENDPOINT_ID = 'projects/655797269815/locations/us-central1/endpoints/2935792803185164288' 
+ENDPOINT_ID = 'projects/655797269815/locations/us-central1/endpoints/8576410598978355200' 
 
 endpoint = aiplatform.Endpoint(ENDPOINT_ID)
 

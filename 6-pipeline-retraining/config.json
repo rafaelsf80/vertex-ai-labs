@@ -7,9 +7,9 @@
   "MODEL_TYPE": "lane",
   "PIPELINE_NAME": "retraining-demo-uscentral1",
   "PIPELINE_ROOT_DIR": "vertex-labs-retraining-pipeline-runs",
-  "ENDPOINT": "projects/655797269815/locations/us-central1/endpoints/7628543614905221120",
-  "MONITORING_JOB": "projects/655797269815/locations/us-central1/modelDeploymentMonitoringJobs/3013864725827026944",
-  "DEPLOYED_MODEL_ID": "3091765124654956544",
+  "ENDPOINT": "projects/655797269815/locations/us-central1/endpoints/8576410598978355200",
+  "MONITORING_JOB": "projects/655797269815/locations/us-central1/modelDeploymentMonitoringJobs/6315135194084933632",
+  "DEPLOYED_MODEL_ID": "2535992783139766272",
   "PREVIOUS_MODEL": "",
   "COMPILED_PIPELINE_DIR": "vertex-labs-retraining-pipelines-compiled",
   "API_ENDPOINT": "us-central1-aiplatform.googleapis.com"
