@@ -164,6 +164,9 @@ Simple Vertex custom training job, usingTensorFlow pre-built custom containers (
 
 For more information about custom training in Vertex, visit the [official documentation](https://cloud.google.com/vertex-ai/docs/training/custom-training) and [this github repo](https://github.com/rafaelsf80/vertex-custom-training)
 
+## Lab 10: simple prediction
+
+
 ## References
 
 [1] Notebook samples about Vertex AI (part 1): https://github.com/GoogleCloudPlatform/vertex-ai-samples/tree/master/notebooks  
