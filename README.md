@@ -155,7 +155,7 @@ updateTime: '2021-10-25T09:15:55.176995Z'
 
 ## Lab 7: Feature Store
 
-Create a Managed Feature Store, importing data and online and batch serving.
+Create a Managed Vertex Feature Store, importing data and perform online and batch serving.
 
 
 ## Lab 8: simple Vertex custom training job (Iris dataset)
@@ -164,7 +164,16 @@ Simple Vertex custom training job, usingTensorFlow pre-built custom containers (
 
 For more information about custom training in Vertex, visit the [official documentation](https://cloud.google.com/vertex-ai/docs/training/custom-training) and [this github repo](https://github.com/rafaelsf80/vertex-custom-training)
 
+
+## Lab 9: experiments
+
+Vertex AI provides two tools for ecxperiment tracking: Vertex experiments and Managed Tensorboard.
+This lab shows how to track training hyperparameters with Vertex experiments.
+
+
 ## Lab 10: simple prediction
+
+Simple prediction on the model deployed in Lab 3 (fraud detection dataset)
 
 
 ## References
