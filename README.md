@@ -1,4 +1,4 @@
-# Vertex AI LABS for Finance
+# Vertex AI LABS
 
 This repository contains code samples for **Vertex AI**, including pipelines, metadata and more. Mainly with **finance datasets**.  
 Setup and authentication instructions of Vertex SDK are available [here](https://cloud.google.com/vertex-ai/docs/start/client-libraries). Please, complete those before trying any of the labs below.
@@ -158,18 +158,18 @@ Create a Managed Vertex Feature Store, importing data and perform online and bat
 
 ## Labs 10-11-12: Vertex custom training (ULB dataset) with pre-built containers
 
-These labs create and deploy ML models for the ULB dataset. In all cases it uses a managed Tensorboard
-* Lab 10: with CPUs. 
-* Lab 11: with GPUs.
-* Lab 12: with GPUs and Hypterparameter tuning.
+These labs create and deploy ML models for the ULB dataset. In all cases it uses a managed Tensorboard to track some metrics:
+* **Lab 10:** with CPU. 
+* **Lab 11:** with GPU.
+* **Lab 12:** with GPU and Hyperparameter tuning.
 
-Setup for labs 10-11-12:
+Setup:
 1. Copy the public table `bigquery-public-data.ml_datasets_ulb` into your project and region. Easiest way for this table size is to download as CSV and then upload it into BigQuery with schema autodetect.
 2. Create a tensorboard instance with `gcloud ai tensorboards create --display-name DISPLAY_NAME --project PROJECT_NAME`, and modify the `TENSORBOARD_RESOURCE` env variable accordingly.
-3. Create a service account for the Tensorboard service. It must have the Storage Admin role (`roles/storage.admin`) and Vertex AI User role (`roles/aiplatform.user`) associated with it.
+3. Create a service account for the Tensorboard service. It must have the Storage Admin role (`roles/storage.admin`) and Vertex AI User role (`roles/aiplatform.user`) associated with it. Additionally the BQ Read session role (`bigquery.readsessions.create`) and BigQuery Data Editor (`bigquery.tables.get`) is required in this specific example.
 
 Notes:
-* TensorFlow and Tensorflow I/O versions must be compatible. Check [here](https://github.com/tensorflow/io#tensorflow-version-compatibility)
+* TensorFlow and Tensorflow I/O versions must be compatible. Check version compatibility [here](https://github.com/tensorflow/io#tensorflow-version-compatibility).
 
 
 ## Lab 13: Vertex custom training (Iris dataset) with custom containers

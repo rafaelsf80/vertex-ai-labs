@@ -28,7 +28,7 @@ job = aiplatform.CustomTrainingJob(
 )
 
 model = job.run(ds,
-    model_display_name='ulb-custom-model',
+    model_display_name='ulb-custom-model-simple',
     replica_count=1,
     service_account = SERVICE_ACCOUNT,
     tensorboard = TENSORBOARD_RESOURCE,
