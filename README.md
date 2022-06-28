@@ -1,6 +1,6 @@
 # Vertex AI LABS for Finance
 
-This repository contains code samples for Vertex AI, including pipelines, metadata and more. Mainly with finance datasets.  
+This repository contains code samples for **Vertex AI**, including pipelines, metadata and more. Mainly with **finance datasets**.  
 Setup and authentication instructions of Vertex SDK are available [here](https://cloud.google.com/vertex-ai/docs/start/client-libraries). Please, complete those before trying any of the labs below.
 
 Sample codes include pipelines, custom training and others. There are three ways to build components in a pipeline:
@@ -12,7 +12,7 @@ Sample codes include pipelines, custom training and others. There are three ways
 3. **Python functions as Component**: easiest way. Use the `@dsl.component` in KFP v2 to package a python function as a component. You can find some samples in **Labs 3 and 4**.
 
 
-## Lab 1: two-step pipeline with custom containers
+## Lab 01: two-step pipeline with custom containers
 
 This pipeline uses a public dataset at 
 [gs://financial_fraud_detection/fraud_data_kaggle.csv](gs://financial_fraud_detection/fraud_data_kaggle.csv) to run a two-step pipeline using custom containers. The Dockerfile definition of each container as well as the code is separated in each directory.
@@ -21,7 +21,7 @@ Output of pipeline with custom containers:
 ![Vertex pipelines result](1-pipeline-custom-xgb/pipeline_custom.png)
 
 
-## Lab 2: three-step pipeline with GCP operators
+## Lab 02: three-step pipeline with GCP operators
 
 This pipeline uses the same public dataset as Lab 1 (tabular detaset, fraud detection) with AutoML, using GCP operators. The three-step pipeline include loading data, training and prediction.
 
@@ -29,7 +29,7 @@ Output of pipeline with GCP components:
 ![Vertex pipelines result](2-pipeline-gcp-operators/pipeline_gccaip.png)
 
 
-## Lab 3: three-step pipeline with lightweight Python components and TensorFlow
+## Lab 03: three-step pipeline with lightweight Python components and TensorFlow
 
 Demo code of a production pipeline using Vertex Pipelines, and training a model using lightweight python components:
 
@@ -51,7 +51,7 @@ python3 -m pip install aiplatform_pipelines_client-0.1.0.caip20210415-py3-none-a
 ![Vertex pipelines result](3-pipeline-lwpython-tf/pipeline_lwpython.png)
 
 
-## Lab 4: two-step pipeline with lightweight Python components and XGB
+## Lab 04: two-step pipeline with lightweight Python components and XGB
 
 Demo code of a production pipeline with the following services:
 
@@ -61,7 +61,7 @@ Demo code of a production pipeline with the following services:
 ![Vertex pipelines result](4-pipeline-lwpython-xgb/pipeline_lwpython_xgb.png)
 
 
-## Lab 5: Simple TFX pipeline with Vertex training and prediction components
+## Lab 05: Simple TFX pipeline with Vertex training and prediction components
 
 Creates a three component penguin pipeline with TFX. You need these frameworks and in these versions:
 ```
@@ -73,7 +73,7 @@ KFP version: 1.8.2
 ![TFX pipeline on Vertex](5-pipeline-tfx-vertex/pipeline.png)
 
 
-## Lab 6: Cloud Pub/Sub to trigger a pipeline based on Vertex monitoring alerts
+## Lab 06: Cloud Pub/Sub to trigger a pipeline based on Vertex monitoring alerts
 
 Lab 6 uses Cloud Scheduler and Pub/Sub to trigger a Cloud Function, which retrains a pipeline. The pipeline is called only if there are **active alerts** in the Vertex Model Monitoring service.
 
@@ -152,11 +152,11 @@ statsAnomaliesBaseDirectory:
 updateTime: '2021-10-25T09:15:55.176995Z'
 ```
 
-## Lab 7: Feature Store
+## Lab 07: Feature Store
 
 Create a Managed Vertex Feature Store, importing data and perform online and batch serving.
 
-## Labs 10-11-12: Vertex custom training job (ULB dataset) with pre-built containers
+## Labs 10-11-12: Vertex custom training (ULB dataset) with pre-built containers
 
 These labs create and deploy ML models for the ULB dataset. In all cases it uses a managed Tensorboard
 * Lab 10: with CPUs. 
@@ -172,20 +172,20 @@ Notes:
 * TensorFlow and Tensorflow I/O versions must be compatible. Check [here](https://github.com/tensorflow/io#tensorflow-version-compatibility)
 
 
-## Lab 13: Vertex custom training job (Iris dataset) with custom containers
+## Lab 13: Vertex custom training (Iris dataset) with custom containers
 
-Simple Vertex custom training job, using TensorFlow pre-built custom containers (for training and serving) and the [tabular iris dataset](https://archive.ics.uci.edu/ml/datasets/iris).
+Simple Vertex custom training job, using TensorFlow custom containers (for training) and the [tabular iris dataset](https://archive.ics.uci.edu/ml/datasets/iris).
 
 For more information about custom training in Vertex, visit the [official documentation](https://cloud.google.com/vertex-ai/docs/training/custom-training) and [this github repo](https://github.com/rafaelsf80/vertex-custom-training)
 
 
 ## Lab 14: experiments
 
-Vertex AI provides two tools for ecxperiment tracking: Vertex experiments and Managed Tensorboard.
+Vertex AI provides two tools for experiment tracking with Vertex experiments and Managed Tensorboard.
 This lab shows how to track training hyperparameters with Vertex experiments.
 
 
-## Lab 13: simple prediction
+## Lab 20: simple prediction
 
 Simple prediction on the model deployed in Lab 3 (fraud detection dataset)
 
