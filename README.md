@@ -1,6 +1,6 @@
 # Vertex AI LABS for Finance
 
-This repository contains sample codes for Vertex AI, including pipelines, metadata and more. Mainly with finance datasets.  
+This repository contains code samples for Vertex AI, including pipelines, metadata and more. Mainly with finance datasets.  
 Setup and authentication instructions of Vertex SDK are available [here](https://cloud.google.com/vertex-ai/docs/start/client-libraries). Please, complete those before trying any of the labs below.
 
 Sample codes include pipelines, custom training and others. There are three ways to build components in a pipeline:

@@ -1,0 +1,16 @@
+{
+  "EXEC_PIPELINE": "true",
+  "PROJECT_ID": "windy-site-254307",
+  "GCP_REGION": "us-central1",
+  "BUCKET_NAME": "vertex-labs-uscentral1",
+  "MODEL_NAME": "retraining",
+  "MODEL_TYPE": "lane",
+  "PIPELINE_NAME": "retraining-demo-uscentral1",
+  "PIPELINE_ROOT_DIR": "vertex-labs-retraining-pipeline-runs",
+  "ENDPOINT": "projects/655797269815/locations/us-central1/endpoints/8576410598978355200",
+  "MONITORING_JOB": "projects/655797269815/locations/us-central1/modelDeploymentMonitoringJobs/6315135194084933632",
+  "DEPLOYED_MODEL_ID": "2535992783139766272",
+  "PREVIOUS_MODEL": "",
+  "COMPILED_PIPELINE_DIR": "vertex-labs-retraining-pipelines-compiled",
+  "API_ENDPOINT": "us-central1-aiplatform.googleapis.com"
+}
