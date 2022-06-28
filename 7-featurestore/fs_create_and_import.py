@@ -28,11 +28,11 @@ from google.cloud.aiplatform_v1beta1.types import featurestore_monitoring as fea
 from google.protobuf.duration_pb2 import Duration
 
 # Set up project, location, featurestore ID and endpoints
-PROJECT_ID = "windy-site-254307"  
+PROJECT_ID = "argolis-rafaelsanchez-ml-dev"  
 LOCATION = "us-central1" 
 API_ENDPOINT = "us-central1-aiplatform.googleapis.com"  
-FEATURESTORE_ID = "fraud_detection_demo_monitoring"
-FEATURESTORE_RESOURCE_NAME = "projects/655797269815/locations/us-central1/featurestores/fraud_detection_demo_monitoring"
+FEATURESTORE_ID = "fraud_detection_demo_monitoring_4"
+FEATURESTORE_RESOURCE_NAME = "projects/989788194604/locations/us-central1/featurestores/fraud_detection_demo_monitoring_4"
 
 # Create admin_client for CRUD and data_client for reading feature values.
 admin_client = FeaturestoreServiceClient(
@@ -141,12 +141,12 @@ def create_transaction_entity():
 # Transaction entity. Expect o(10 minutes) if the number of rows is large.
 def batch_ingestion_transactions():
 
-    timestamp = Timestamp()
+    timestamp = Timestamp().GetCurrentTime()
     import_request_transaction = featurestore_service_pb2.ImportFeatureValuesRequest(
         entity_type=admin_client.entity_type_path(PROJECT_ID, LOCATION,
                                                 FEATURESTORE_ID, "transaction"),
         csv_source=io_pb2.CsvSource(
-            gcs_source=io_pb2.GcsSource(uris=["gs://caip-pipelines-xgb-demo-fraud-detection-uscentral1/fraud_data_kaggle_5000.csv"]) # 500 internal error for 1M rows, tried 5000 rows
+            gcs_source=io_pb2.GcsSource(uris=["gs://argolis-vertex-uscentral1/fraud_data_kaggle_5000.csv"]) # 500 internal error for 1M rows, tried 5000 rows
         ),
         feature_specs=[
             featurestore_service_pb2.ImportFeatureValuesRequest.FeatureSpec(
@@ -196,9 +196,9 @@ BASE_RESOURCE_PATH = admin_client.common_location_path(PROJECT_ID, LOCATION)
 
 # STEP 1: Create feature store, entities and features. You MUST only do this ONCE
 
-#create_fs()
+create_fs()
 # STEP 2: Create entity "transaction" with its 5 features You MUST only do this ONCE
-#create_transaction_entity()
+create_transaction_entity()
 
 # Check that features are created
 for entity_type in admin_client.list_entity_types(
@@ -208,19 +208,19 @@ for entity_type in admin_client.list_entity_types(
                                                 num_features))
 
 # Check all features from all Feature stores in the project
-#print("********** All features from all Feature Stores")
-#print(list(admin_client.search_features(location=BASE_RESOURCE_PATH)))
-#print("********** All Feature Stores")
-#print(list(admin_client.list_featurestores(parent=BASE_RESOURCE_PATH)))
+print("********** All features from all Feature Stores")
+print(list(admin_client.search_features(location=BASE_RESOURCE_PATH)))
+print("********** All Feature Stores")
+print(list(admin_client.list_featurestores(parent=BASE_RESOURCE_PATH)))
 
-# STEP 3: Batch ingestion. GCS must be in the same region as Feature Store
+# # STEP 3: Batch ingestion. GCS must be in the same region as Feature Store
 batch_ingestion_transactions()
 
-# STEP 4: Online serving
-#online_serving()
+# # STEP 4: Online serving
+online_serving()
 
 # STEP 5: Remove Feature Store
-#FEATURESTORE_ID="fraud_detection_demo_monitoring"
-#print("********** Remove Feature Store ", FEATURESTORE_ID)
-#admin_client.delete_featurestore(name=admin_client.featurestore_path(PROJECT_ID, LOCATION,
-#                                        FEATURESTORE_ID)).result()
+# FEATURESTORE_ID="fraud_detection_demo_monitoring"
+# print("********** Remove Feature Store ", FEATURESTORE_ID)
+# admin_client.delete_featurestore(name=admin_client.featurestore_path(PROJECT_ID, LOCATION,
+#                                         FEATURESTORE_ID), force=True).result()

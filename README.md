@@ -1,6 +1,6 @@
-# Vertex AI LABS
+# Vertex AI LABS for Finance
 
-This repository contains sample codes for Vertex AI, including pipelines, metadata and more.  
+This repository contains sample codes for Vertex AI, including pipelines, metadata and more. Mainly with finance datasets.  
 Setup and authentication instructions of Vertex SDK are available [here](https://cloud.google.com/vertex-ai/docs/start/client-libraries). Please, complete those before trying any of the labs below.
 
 Sample codes include pipelines, custom training and others. There are three ways to build components in a pipeline:
@@ -152,26 +152,40 @@ statsAnomaliesBaseDirectory:
 updateTime: '2021-10-25T09:15:55.176995Z'
 ```
 
-
 ## Lab 7: Feature Store
 
 Create a Managed Vertex Feature Store, importing data and perform online and batch serving.
 
+## Labs 10-11-12: Vertex custom training job (ULB dataset) with pre-built containers
 
-## Lab 8: simple Vertex custom training job (Iris dataset)
+These labs create and deploy ML models for the ULB dataset. In all cases it uses a managed Tensorboard
+* Lab 10: with CPUs. 
+* Lab 11: with GPUs.
+* Lab 12: with GPUs and Hypterparameter tuning.
 
-Simple Vertex custom training job, usingTensorFlow pre-built custom containers (for training and serving) and the [tabular iris dataset](https://archive.ics.uci.edu/ml/datasets/iris).
+Setup for labs 10-11-12:
+1. Copy the public table `bigquery-public-data.ml_datasets_ulb` into your project and region. Easiest way for this table size is to download as CSV and then upload it into BigQuery with schema autodetect.
+2. Create a tensorboard instance with `gcloud ai tensorboards create --display-name DISPLAY_NAME --project PROJECT_NAME`, and modify the `TENSORBOARD_RESOURCE` env variable accordingly.
+3. Create a service account for the Tensorboard service. It must have the Storage Admin role (`roles/storage.admin`) and Vertex AI User role (`roles/aiplatform.user`) associated with it.
+
+Notes:
+* TensorFlow and Tensorflow I/O versions must be compatible. Check [here](https://github.com/tensorflow/io#tensorflow-version-compatibility)
+
+
+## Lab 13: Vertex custom training job (Iris dataset) with custom containers
+
+Simple Vertex custom training job, using TensorFlow pre-built custom containers (for training and serving) and the [tabular iris dataset](https://archive.ics.uci.edu/ml/datasets/iris).
 
 For more information about custom training in Vertex, visit the [official documentation](https://cloud.google.com/vertex-ai/docs/training/custom-training) and [this github repo](https://github.com/rafaelsf80/vertex-custom-training)
 
 
-## Lab 9: experiments
+## Lab 14: experiments
 
 Vertex AI provides two tools for ecxperiment tracking: Vertex experiments and Managed Tensorboard.
 This lab shows how to track training hyperparameters with Vertex experiments.
 
 
-## Lab 10: simple prediction
+## Lab 13: simple prediction
 
 Simple prediction on the model deployed in Lab 3 (fraud detection dataset)
 
