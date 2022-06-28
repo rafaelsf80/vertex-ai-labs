@@ -69,20 +69,21 @@ def encode_numerical_feature(feature, name, dataset):
   return encoded_feature
 
 
-all_inputs = []
-encoded_features = []
 
-# Numerical features.
-for header in FEATURES:
-  numeric_col = tf.keras.Input(shape=(1,), name=header)
-  all_inputs.append(numeric_col)
-  logging.info(header)
+strategy = tf.distribute.MirroredStrategy()    
+with strategy.scope():
+  all_inputs = []
+  encoded_features = []
+
+  # Numerical features.
+  for header in FEATURES:
+    numeric_col = tf.keras.Input(shape=(1,), name=header)
+    all_inputs.append(numeric_col)
+    logging.info(header)
 
   encoded_numeric_col = encode_numerical_feature(numeric_col, header, training_ds)
   encoded_features.append(encoded_numeric_col)
 
-strategy = tf.distribute.MirroredStrategy()    
-with strategy.scope():
   all_features = tf.keras.layers.concatenate(encoded_features)
   x = tf.keras.layers.Dense(64, activation="relu")(all_features)
   x = tf.keras.layers.Dropout(0.5)(x)

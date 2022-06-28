@@ -21,18 +21,18 @@ ds = aiplatform.TabularDataset.create(
 # Launch Training pipeline, a type of Vertex Training Job.
 # A Training pipeline integrates three steps into one job: Accessing a Managed Dataset (not used here), Training, and Model Upload. 
 job = aiplatform.CustomTrainingJob(
-    display_name="ulb_tf27_custom_training_simple",
-    script_path="script_custom_training.py",
+    display_name="ulb_tf27_custom_training_gpu",
+    script_path="script_custom_training_gpu.py",
     container_uri="europe-docker.pkg.dev/vertex-ai/training/tf-gpu.2-7:latest",
     model_serving_container_image_uri="europe-docker.pkg.dev/vertex-ai/prediction/tf2-gpu.2-7:latest",
 )
 
 model = job.run(ds,
-    model_display_name='ulb-custom-model',
+    model_display_name='ulb-custom-model-gpu',
     replica_count=1,
     service_account = SERVICE_ACCOUNT,
     tensorboard = TENSORBOARD_RESOURCE,
-    accelerator_type= "NVIDIA_TESLA_K80",
+    accelerator_type= "NVIDIA_TESLA_T4",
     accelerator_count = 1,
     bigquery_destination=f'bq://{PROJECT_ID}'   # must provide a destination as Dataset source is BQ
 )
