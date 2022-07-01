@@ -18,7 +18,7 @@ This pipeline uses a public dataset at
 [gs://financial_fraud_detection/fraud_data_kaggle.csv](gs://financial_fraud_detection/fraud_data_kaggle.csv) to run a two-step pipeline using custom containers. The Dockerfile definition of each container as well as the code is separated in each directory.
 
 Output of pipeline with custom containers:
-![Vertex pipelines result](1-pipeline-custom-xgb/pipeline_custom.png)
+![Vertex pipelines result](01-pipeline-custom-xgb/pipeline_custom.png)
 
 
 ## Lab 02: three-step pipeline with GCP operators
@@ -26,7 +26,7 @@ Output of pipeline with custom containers:
 This pipeline uses the same public dataset as Lab 1 (tabular detaset, fraud detection) with AutoML, using GCP operators. The three-step pipeline include loading data, training and prediction.
 
 Output of pipeline with GCP components:
-![Vertex pipelines result](2-pipeline-gcp-operators/pipeline_gccaip.png)
+![Vertex pipelines result](02-pipeline-gcp-operators/pipeline_gccaip.png)
 
 
 ## Lab 03: three-step pipeline with lightweight Python components and TensorFlow
@@ -48,7 +48,7 @@ python3 -m pip install kfp-1.5.0rc5.tar.gz --upgrade
 python3 -m pip install aiplatform_pipelines_client-0.1.0.caip20210415-py3-none-any.whl  --upgrade
 ```
 
-![Vertex pipelines result](3-pipeline-lwpython-tf/pipeline_lwpython.png)
+![Vertex pipelines result](03-pipeline-lwpython-tf/pipeline_lwpython.png)
 
 
 ## Lab 04: two-step pipeline with lightweight Python components and XGB
@@ -58,7 +58,7 @@ Demo code of a production pipeline with the following services:
 * **[Vertex Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction)**
 * **[Vertex ML Metadata](https://cloud.google.com/vertex-ai/docs/ml-metadata/introduction)**
 
-![Vertex pipelines result](4-pipeline-lwpython-xgb/pipeline_lwpython_xgb.png)
+![Vertex pipelines result](04-pipeline-lwpython-xgb/pipeline_lwpython_xgb.png)
 
 
 ## Lab 05: Simple TFX pipeline with Vertex training and prediction components
@@ -70,7 +70,7 @@ TFX version: 1.3.0
 KFP version: 1.8.2
 ```
 
-![TFX pipeline on Vertex](5-pipeline-tfx-vertex/pipeline.png)
+![TFX pipeline on Vertex](05-pipeline-tfx-vertex/pipeline.png)
 
 
 ## Lab 06: Cloud Pub/Sub to trigger a pipeline based on Vertex monitoring alerts
@@ -89,7 +89,7 @@ As stated before, two files must be uploaded to GCS for the retraining:
 
 Cloud Scheduler is configured with frequency `0 9 * * *` (see other sample schedules [here](https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules#sample_schedules)), i.e. one execution every day at 9am that will run the Cloud Function.
 
-![Retraining pipeline](6-pipeline-retraining/architecture.png)
+![Retraining pipeline](06-pipeline-retraining/architecture.png)
 
 FAQ:
 * In case you get this error when creating the **Model monitoring job**, add the `bigquery insert` permission to the service account.
@@ -164,17 +164,42 @@ These labs create and deploy ML models for the ULB dataset. In all cases it uses
 * **Lab 12:** with GPU and Hyperparameter tuning.
 
 Setup:
-1. Copy the public table `bigquery-public-data.ml_datasets_ulb` into your project and region. Easiest way for this table size is to download as CSV and then upload it into BigQuery with schema autodetect.
-2. Create a tensorboard instance with `gcloud ai tensorboards create --display-name DISPLAY_NAME --project PROJECT_NAME`, and modify the `TENSORBOARD_RESOURCE` env variable accordingly.
-3. Create a service account for the Tensorboard service. It must have the Storage Admin role (`roles/storage.admin`) and Vertex AI User role (`roles/aiplatform.user`) associated with it. Additionally the BQ Read session role (`bigquery.readsessions.create`) and BigQuery Data Editor (`bigquery.tables.get`) is required in this specific example.
+1. Copy the public table `bigquery-public-data.ml_datasets.ulb` into your project and region. Easiest way for this table size is to export as CSV to GCS and then upload it into BigQuery with schema autodetect. Multiregional tables in BigQuery or GCS works with regional training in Vertex AI training. For example: you can run a Vertex AI training job in `europe-west4` using a EU multiregional dataset from a BigQuery.
+2. Create a tensorboard instance with `gcloud ai tensorboards create --display-name DISPLAY_NAME --project PROJECT_NAME`, and modify the `TENSORBOARD_RESOURCE` env variable accordingly. Example:
+```sh
+gcloud beta ai tensorboards create --display-name ml-in-the-cloud-rafaelsanchez --project argolis-rafaelsanchez-ml-dev
+Created Vertex AI Tensorboard: projects/989788194604/locations/europe-west4/tensorboards/3449511023961178112
+```
+3. Create a service account for the Tensorboard service. It must have the Storage Admin role (`roles/storage.admin`) and Vertex AI User role (`roles/aiplatform.user`) associated with it. Additionally the BQ Read session role (`bigquery.readsessions.create`) and BigQuery Data Editor (`bigquery.tables.get`) is required for this specific example.
+
+Run:
+```sh
+python3 10-training-tables-ulb/custom_training_simple.py
+python3 11-training-tables-ulb-gpu/custom_training_simple_gpu.py
+python3 12-training-tables-ulb-ht/custom_training_simple_ht.py
+```
 
 Notes:
-* TensorFlow and Tensorflow I/O versions must be compatible. Check version compatibility [here](https://github.com/tensorflow/io#tensorflow-version-compatibility).
+* TensorFlow and Tensorflow I/O versions must be compatible in your environment. This is guaranteed if you use Vertex AI Workbench. Check version compatibility [here](https://github.com/tensorflow/io#tensorflow-version-compatibility).
 
 
 ## Lab 13: Vertex custom training (Iris dataset) with custom containers
 
-Simple Vertex custom training job, using TensorFlow custom containers (for training) and the [tabular iris dataset](https://archive.ics.uci.edu/ml/datasets/iris).
+Simple Vertex custom training job, using TensorFlow **custom containers** (for training) and the [tabular iris dataset](https://archive.ics.uci.edu/ml/datasets/iris). This lab uses GPUs.
+
+Setup:
+1. Copy the public table `bigquery-public-data.ml_datasets.iris` into your project and region. Easiest way for this table size is to export as CSV to GCS and then upload it into BigQuery with schema autodetect.
+2. Create the repository and submit the custom container to **Artifact Registry**:
+```sh
+gcloud artifacts repositories create ml-pipelines-repo --repository-format=docker --location=europe-west4 --description="ML pipelines repository"
+gcloud auth configure-docker europe-west4-docker.pkg.dev
+gcloud builds submit --tag europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/vertex-iris-demo
+```
+
+Run:
+```sh
+python3 13-training-tables-iris/mbsdk_all.py
+```
 
 For more information about custom training in Vertex, visit the [official documentation](https://cloud.google.com/vertex-ai/docs/training/custom-training) and [this github repo](https://github.com/rafaelsf80/vertex-custom-training)
 
@@ -187,14 +212,14 @@ This lab shows how to track training hyperparameters with Vertex experiments.
 
 ## Lab 20: simple prediction
 
-Simple prediction on the model deployed in Lab 3 (fraud detection dataset)
+Simple prediction on the model deployed in Lab 3 and 10-11-12 (fraud detection dataset).
 
 
 ## References
 
-[1] Notebook samples about Vertex AI (part 1): https://github.com/GoogleCloudPlatform/vertex-ai-samples/tree/master/notebooks  
-[2] Notebooks samples about Vertex AI (part 2): https://github.com/GoogleCloudPlatform/cloudml-samples/tree/master/notebooks  
-[3] Codelab Intro to Vertex Pipelines: https://codelabs.developers.google.com/vertex-pipelines-intro  
-[4] Codelab Vertex pipelines and metadata: https://codelabs.developers.google.com/vertex-mlmd-pipelines  
-[5] Practitioners guide to MLOps: https://cloud.google.com/resources/mlops-whitepaper  
-[6] Feature attributions in model monitoring: https://cloud.google.com/blog/topics/developers-practitioners/monitoring-feature-attributions-how-google-saved-one-largest-ml-services-trouble
+`[1]` Notebook samples about Vertex AI (part 1): https://github.com/GoogleCloudPlatform/vertex-ai-samples/tree/master/notebooks  
+`[2]` Notebooks samples about Vertex AI (part 2): https://github.com/GoogleCloudPlatform/cloudml-samples/tree/master/notebooks  
+`[3]` Codelab Intro to Vertex Pipelines: https://codelabs.developers.google.com/vertex-pipelines-intro  
+`[4]` Codelab Vertex pipelines and metadata: https://codelabs.developers.google.com/vertex-mlmd-pipelines  
+`[5]` Practitioners guide to MLOps: https://cloud.google.com/resources/mlops-whitepaper  
+`[6]` Feature attributions in model monitoring: https://cloud.google.com/blog/topics/developers-practitioners/monitoring-feature-attributions-how-google-saved-one-largest-ml-services-trouble   

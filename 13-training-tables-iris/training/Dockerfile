@@ -1,4 +1,4 @@
-# gcloud builds submit --tag gcr.io/windy-site-254307/caip-training 
+# gcloud builds submit --tag gcr.io/argolis-rafaelsanchez-ml-dev/caip-training 
 # gcloud artifacts repositories create ml-pipelines-repo --repository-format=docker --location=europe-west4 --description="ML pipelines repository"
 # gcloud auth configure-docker europe-west4-docker.pkg.dev
 # gcloud builds submit --tag europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/vertex-iris-demo

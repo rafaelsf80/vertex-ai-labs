@@ -147,3 +147,6 @@ model.fit(training_ds, epochs=EPOCHS, class_weight=CLASS_WEIGHT, validation_data
 logging.info(model.evaluate(test_ds))
 
 tf.saved_model.save(model, os.environ["AIP_MODEL_DIR"])
+
+
+
