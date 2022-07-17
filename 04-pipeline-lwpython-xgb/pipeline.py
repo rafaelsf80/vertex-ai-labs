@@ -1,19 +1,14 @@
-
 from kfp import dsl
 from kfp.v2 import compiler
-from kfp.v2.dsl import (Artifact, Dataset, Input, InputPath, Model, Output,
+from kfp.v2.dsl import (Dataset, Input, Model, Output,
                         OutputPath, ClassificationMetrics, Metrics, component)
 
-from google.cloud.aiplatform import pipeline_jobs
+from google.cloud import aiplatform
 
 import logging
 
-
-# We'll use this beta library for metadata querying
-from google.cloud import aiplatform_v1beta1
-
-PROJECT_ID = 'windy-site-254307'
-MY_STAGING_BUCKET = 'caip-prediction-custom-uscentral1'
+PROJECT_ID = 'argolis-rafaelsanchez-ml-dev'
+MY_STAGING_BUCKET = 'argolis-vertex-uscentral1'
 REGION = 'us-central1'
 USER='rafaelsanchez'
 PIPELINE_ROOT = 'gs://{}/pipeline_root/{}'.format(MY_STAGING_BUCKET, USER)
@@ -23,9 +18,9 @@ PIPELINE_ROOT = 'gs://{}/pipeline_root/{}'.format(MY_STAGING_BUCKET, USER)
 #########################
 
 @component(
-    packages_to_install=["google-cloud-bigquery", "pandas", "pyarrow"],
+    packages_to_install=["google-cloud-bigquery", "pandas", "db-dtypes", "pyarrow"],
     base_image="python:3.9",
-    output_component_file="4-pipeline-lwpython-xgb/get_dataset.yaml"
+    output_component_file="04-pipeline-lwpython-xgb/get_dataset.yaml"
 )
 def get_dataframe(
     bq_table: str,
@@ -34,7 +29,7 @@ def get_dataframe(
     from google.cloud import bigquery
     import pandas as pd
 
-    bqclient = bigquery.Client()
+    bqclient = bigquery.Client(project='argolis-rafaelsanchez-ml-dev')
     table = bigquery.TableReference.from_string(
         bq_table
     )
@@ -51,9 +46,9 @@ def get_dataframe(
 ### Training
 #########################
 @component(
-    packages_to_install=["sklearn", "pandas", "joblib", "xgboost"],
+    packages_to_install=["xgboost==1.3.3", "scikit-learn==0.24.1", "pandas", "joblib"],
     base_image="python:3.9",
-    output_component_file="4-pipeline-lwpython-xgb/xgb_model_training.yaml"
+    output_component_file="04-pipeline-lwpython-xgb/xgb_model_training.yaml"
 )
 def xgb_train(
     dataset: Input[Dataset],
@@ -65,8 +60,6 @@ def xgb_train(
     metricsc: Output[ClassificationMetrics],
 
 ):
-    from sklearn.tree import DecisionTreeClassifier
-    from sklearn.metrics import roc_curve
     from sklearn.metrics import confusion_matrix
     from sklearn.metrics import accuracy_score
     from sklearn import model_selection
@@ -79,28 +72,27 @@ def xgb_train(
     import numpy as np
 
     import logging
+    import sklearn
 
     df = pd.read_csv(dataset.path)
     labels = df.pop("Class").tolist()
     data = df.values.tolist()
     x_train, x_test, y_train, y_test = train_test_split(data, labels)
 
+    # train_test_split() returns lists, we need to convert it to numpy to avoid
+    # 'list' object has no attribute 'shape' errors in xgb.fit()
     x_train = np.asarray(x_train)
     y_train = np.asarray(y_train)
     x_test = np.asarray(x_test)
     y_test = np.asarray(y_test)
-
+ 
     classifier = xgb.XGBClassifier(max_depth=int(xgboost_param_max_depth), learning_rate=xgboost_param_learning_rate, n_estimators=int(xgboost_param_n_estimators))
     classifier.fit(x_train,y_train)
-    print(classifier)
-    
+
     score = accuracy_score(y_test, classifier.predict(x_test))
-   
+
     y_pred = classifier.predict(x_test)
     cm = confusion_matrix(y_pred, y_test, labels=['DERMASON','SEKER','CALI','SIRA','BOMBAY','BARBUNYA','HOROZ'])
-    print(cm)
-    #model = 'model.bst'
-    #clf.save_model(model)
 
     # log metrics
     logging.info("accuracy is: %s", score)
@@ -159,31 +151,34 @@ def pipeline(
 ### Compile and run pipeline on Vertex AI
 #########################
 
+# Compile and run the pipeline
+aiplatform.init(project=PROJECT_ID, location=REGION)
+
 logging.getLogger().setLevel(logging.INFO)
 
 compiler.Compiler().compile(
-    pipeline_func=pipeline, package_path="4-pipeline-lwpython-xgb/demo-lw-pipeline-xgb.json"
+    pipeline_func=pipeline, package_path="04-demo-lw-pipeline-xgb.json"
 )
 
 from datetime import datetime
 
 TIMESTAMP = datetime.now().strftime("%Y%m%d%H%M%S")
 
-run1 = pipeline_jobs.PipelineJob(
-    display_name="demo-lwtraining-xgb-small",
-    template_path="4-pipeline-lwpython-xgb/demo-lw-pipeline-xgb.json",
+run1 =aiplatform.PipelineJob(
+    display_name="04-demo-lwtraining-xgb-small",
+    template_path="04-demo-lw-pipeline-xgb.json",
     job_id="demo-lwtraining-xgb-small-{0}".format(TIMESTAMP),
     parameter_values={"bq_table": "sara-vertex-demos.beans_demo.small_dataset"},
     enable_caching=True,
 )
 
-run2 = pipeline_jobs.PipelineJob(
-    display_name="demo-lwtraining-xgb-large",
-    template_path="4-pipeline-lwpython-xgb/demo-lw-pipeline-xgb.json",
+run2 = aiplatform.PipelineJob(
+    display_name="04-demo-lwtraining-xgb-large",
+    template_path="04-demo-lw-pipeline-xgb.json",
     job_id="demo-lwtraining-xgb-large-{0}".format(TIMESTAMP),
     parameter_values={"bq_table": "sara-vertex-demos.beans_demo.large_dataset"},
     enable_caching=True,
 )
 
-run1.run()
-run2.run()
+run1.submit()
+run2.submit()

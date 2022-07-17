@@ -5,14 +5,14 @@ apiVersion: skaffold/v2beta5
 kind: Config
 build:
   artifacts:
-    - image: europe-west4-docker.pkg.dev/windy-site-254307/ml-pipelines-repo/xgboost-fraud-detection-generatedata
-      context: 1-pipeline-custom-xgb/generatedata
+    - image: europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/xgboost-fraud-detection-generatedata
+      context: 01-pipeline-custom-xgb/generatedata
       docker:
         dockerfile: ./Dockerfile
-    - image: europe-west4-docker.pkg.dev/windy-site-254307/ml-pipelines-repo/xgboost-fraud-detection-trainer
-      context: 1-pipeline-custom-xgb/train
+    - image: europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/xgboost-fraud-detection-trainer
+      context: 01-pipeline-custom-xgb/train
       docker:
         dockerfile: ./Dockerfile
   googleCloudBuild:
-    projectId: windy-site-254307
+    projectId: argolis-rafaelsanchez-ml-dev
     timeout: 3600s

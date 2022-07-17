@@ -1,16 +1,12 @@
-""" Copied from https://www.tensorflow.org/tfx/tutorials/tfx/penguin_simple """
-
 from typing import List
 from absl import logging
 import tensorflow as tf
 from tensorflow import keras
+from tensorflow_metadata.proto.v0 import schema_pb2
 from tensorflow_transform.tf_metadata import schema_utils
-
 
 from tfx import v1 as tfx
 from tfx_bsl.public import tfxio
-
-from tensorflow_metadata.proto.v0 import schema_pb2
 
 _FEATURE_KEYS = [
     'culmen_length_mm', 'culmen_depth_mm', 'flipper_length_mm', 'body_mass_g'
@@ -26,9 +22,8 @@ _EVAL_BATCH_SIZE = 10
 _FEATURE_SPEC = {
     **{
         feature: tf.io.FixedLenFeature(shape=[1], dtype=tf.float32)
-           for feature in _FEATURE_KEYS
-       },
-    _LABEL_KEY: tf.io.FixedLenFeature(shape=[1], dtype=tf.int64)
+        for feature in _FEATURE_KEYS
+    }, _LABEL_KEY: tf.io.FixedLenFeature(shape=[1], dtype=tf.int64)
 }
 
 
@@ -80,6 +75,15 @@ def _make_keras_model() -> tf.keras.Model:
   return model
 
 
+# NEW: Read `use_gpu` from the custom_config of the Trainer.
+#      if it uses GPU, enable MirroredStrategy.
+def _get_distribution_strategy(fn_args: tfx.components.FnArgs):
+  if fn_args.custom_config.get('use_gpu', False):
+    logging.info('Using MirroredStrategy with one GPU.')
+    return tf.distribute.MirroredStrategy(devices=['device:GPU:0'])
+  return None
+
+
 # TFX Trainer will call this function.
 def run_fn(fn_args: tfx.components.FnArgs):
   """Train the model based on given args.
@@ -106,7 +110,14 @@ def run_fn(fn_args: tfx.components.FnArgs):
       schema,
       batch_size=_EVAL_BATCH_SIZE)
 
-  model = _make_keras_model()
+  # NEW: If we have a distribution strategy, build a model in a strategy scope.
+  strategy = _get_distribution_strategy(fn_args)
+  if strategy is None:
+    model = _make_keras_model()
+  else:
+    with strategy.scope():
+      model = _make_keras_model()
+
   model.fit(
       train_dataset,
       steps_per_epoch=fn_args.train_steps,

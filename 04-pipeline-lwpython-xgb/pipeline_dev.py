@@ -1,3 +1,7 @@
+# This code requires exactly "xgboost==1.3.3", "scikit-learn==0.24.1"
+# to avoid this error: 
+# AttributeError: 'bool' object has no attribute 'all'
+
 from google.cloud import bigquery
 from google.cloud import aiplatform
 import pandas as pd
@@ -10,7 +14,7 @@ from sklearn import model_selection
 
 from sklearn.model_selection import train_test_split
 from joblib import dump
-
+import sklearn
 import numpy as np
 import pandas as pd
 import xgboost as xgb
@@ -46,7 +50,6 @@ y_test = np.asarray(y_test)
 
 classifier = xgb.XGBClassifier(max_depth=int(xgboost_param_max_depth), learning_rate=xgboost_param_learning_rate, n_estimators=int(xgboost_param_n_estimators))
 classifier.fit(x_train,y_train)
-print(classifier)
 
 score = accuracy_score(y_test, classifier.predict(x_test))
 
@@ -73,6 +76,5 @@ print(y_train)
 #         y_train, predictions
 #     ).tolist(),  # .tolist() to convert np array to list.
 # )
-
         
 dump(classifier, "./classifier.bst")

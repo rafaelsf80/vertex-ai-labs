@@ -26,7 +26,7 @@ job = aiplatform.CustomJob.from_local_script(display_name='ulb_tf27_custom_train
         requirements=['gcsfs==0.7.1', 'cloudml-hypertune'],
         #model_serving_container_image_uri='us-docker.pkg.dev/vertex-ai/prediction/tf2-gpu.2-4:latest',
         machine_type="n1-standard-4",
-        accelerator_type= "NVIDIA_TESLA_K80",
+        accelerator_type= "NVIDIA_TESLA_T4",
         accelerator_count = 1)
 
 hp_job = aiplatform.HyperparameterTuningJob(

@@ -4,23 +4,25 @@ from kfp.v2 import compiler
 
 from google_cloud_pipeline_components import aiplatform as gcc_aip
 
-PROJECT_ID = 'windy-site-254307'
-MY_STAGING_BUCKET = 'caip-prediction-custom-uscentral1'
-LOCATION = 'us-central1'
+PROJECT_ID = 'argolis-rafaelsanchez-ml-dev'
+MY_STAGING_BUCKET = 'argolis-vertex-europewest4'
+LOCATION = 'europe-west4'
 USER = 'rafaelsanchez'
 PIPELINE_ROOT = 'gs://{}/pipeline_root/{}'.format(MY_STAGING_BUCKET, USER)
-CONTAINER_AR_URI = 'us-central1-docker.pkg.dev/windy-site-254307/ml-pipelines-repo-us/vertex-custom-container:b2ce020-dirty'
+BIGQUERY_URI = 'bq://argolis-rafaelsanchez-ml-dev.ml_datasets_europewest4.ulb_'
+
+#CONTAINER_AR_URI = 'us-central1-docker.pkg.dev/windy-site-254307/ml-pipelines-repo-us/vertex-custom-container:b2ce020-dirty'
 # If Docker permission error or Docker image could not be pulled error, just run "gcloud auth configure-docker us-central1-docker.pkg.dev,europe-west4-docker.pkg.dev"
 # Set also project proprtly with gcloud config set project BEFORE gcloud auth
-gcc_aip.utils.DEFAULT_CONTAINER_IMAGE=CONTAINER_AR_URI
+#gcc_aip.utils.DEFAULT_CONTAINER_IMAGE=CONTAINER_AR_URI
 
-@kfp.dsl.pipeline(name='fraud-detection-demo-gccaip-uscentral1')
+@kfp.dsl.pipeline(name='fraud-detection-demo-gccaip-europewest4')
 def pipeline():
   dataset_create_op = gcc_aip.TabularDatasetCreateOp(
       project=PROJECT_ID, 
       location=LOCATION,
       display_name='fraud-detection-demo-gccaip',
-      bq_source=f'bq://bigquery-public-data.ml_datasets.ulb_fraud_detection')
+      bq_source=BIGQUERY_URI)
 
   training_op = gcc_aip.AutoMLTabularTrainingJobRunOp(
       project=PROJECT_ID,
@@ -64,23 +66,22 @@ def pipeline():
   )
 
   deploy_op = gcc_aip.ModelDeployOp(
-      model=training_op.outputs['model'],
-      project=PROJECT_ID,
-      location=LOCATION,
-      machine_type='n1-standard-4')
+      model=training_op.outputs['model']
+      )
 
 
 # Compile and run the pipeline
-aiplatform.init(project=PROJECT_ID)
-compiler.Compiler().compile(pipeline_func=pipeline, 
-        package_path='fraud_detection_demo_gccaip_uscentral1.json')
- 
-PIPELINE_ROOT='gs://caip-pipelines-xgb-demo-fraud-detection-uscentral1'
+aiplatform.init(project=PROJECT_ID, location=LOCATION)
 
-from google.cloud.aiplatform import pipeline_jobs
-pipeline_jobs.PipelineJob(
-    display_name='fraud-detection-demo-gccaip-uscentral1',
-    template_path='fraud_detection_demo_gccaip_uscentral1.json',
+compiler.Compiler().compile(
+    pipeline_func=pipeline, package_path="fraud-detection-demo-gccaip-europewest4.json"
+)
+
+run = aiplatform.PipelineJob(
+    display_name='fraud-detection-demo-gccaip-europewest4',
+    template_path='fraud-detection-demo-gccaip-europewest4.json',
     pipeline_root=PIPELINE_ROOT,
-    enable_caching=True
-).run(sync=False)
+    enable_caching=True,
+)
+
+run.submit()

@@ -9,7 +9,7 @@ Sample codes include pipelines, custom training and others. There are three ways
 
 2. **Python scripts as Components**: you must write a Python script and package it in a container.  Then write a component yaml, which tells the system how to execute your component. You can find a sample in **Lab 2**.
 
-3. **Python functions as Component**: easiest way. Use the `@dsl.component` in KFP v2 to package a python function as a component. You can find some samples in **Labs 3 and 4**.
+3. **Python functions as Component**: easiest way. Use the `@dsl.component` decorator in KFP v2 to package a python function as a component. You can find some samples in **Labs 3 and 4**.
 
 
 ## Lab 01: two-step pipeline with custom containers
@@ -18,20 +18,20 @@ This pipeline uses a public dataset at
 [gs://financial_fraud_detection/fraud_data_kaggle.csv](gs://financial_fraud_detection/fraud_data_kaggle.csv) to run a two-step pipeline using custom containers. The Dockerfile definition of each container as well as the code is separated in each directory.
 
 Output of pipeline with custom containers:
-![Vertex pipelines result](01-pipeline-custom-xgb/pipeline_custom.png)
 
+<img src="01-pipeline-custom-xgb/pipeline_custom.png" alt="Vertex pipelines result" width="300"/>
 
 ## Lab 02: three-step pipeline with GCP operators
 
-This pipeline uses the same public dataset as Lab 1 (tabular detaset, fraud detection) with AutoML, using GCP operators. The three-step pipeline include loading data, training and prediction.
+This pipeline uses the ULB dataset (tabular detaset, fraud detection) with AutoML, using GCP operators. The three-step pipeline include loading data, training and prediction.
 
 Output of pipeline with GCP components:
-![Vertex pipelines result](02-pipeline-gcp-operators/pipeline_gccaip.png)
 
+<img src="02-pipeline-gcp-operators/pipeline_gccaip.png" alt="Vertex pipelines result" width="300"/>
 
 ## Lab 03: three-step pipeline with lightweight Python components and TensorFlow
 
-Demo code of a production pipeline using Vertex Pipelines, and training a model using lightweight python components:
+Using the ULB dataset, this pipeline trains a Keras model using lightweight python components:
 
 * **Preprocess component:** Load from BigQuery using tensorflow_io
 * **Train component:** custom train using a Keras model with 4 layers. 
@@ -39,29 +39,36 @@ Demo code of a production pipeline using Vertex Pipelines, and training a model 
 
 To install the proper libraries:
 
-```bash
-gsutil cp gs://cloud-aiplatform-pipelines/releases/latest/kfp-1.5.0rc5.tar.gz .
-gsutil cp gs://cloud-aiplatform-pipelines/releases/latest/aiplatform_pipelines_client-0.1.0.caip20210415-py3-none-any.whl 
+<img src="03-pipeline-lwpython-tf/pipeline_lwpython.png" alt="Vertex pipelines result" width="300"/>
 
-python3 -m pip install google-cloud-aiplatform
-python3 -m pip install kfp-1.5.0rc5.tar.gz --upgrade
-python3 -m pip install aiplatform_pipelines_client-0.1.0.caip20210415-py3-none-any.whl  --upgrade
+Q: NotImplementedError: unable to open file: libtensorflow_io.so, from paths: ['/usr/local/lib/python3.8/site-packages/tensorflow_io/python/ops/libtensorflow_io.so']
+A: TensorFlow and Tensorflow I/O versions must be compatible. Check version compatibility [here](https://github.com/tensorflow/io#tensorflow-version-compatibility) and change the base image and packages accordingly:
+```py
+@component(
+    base_image="gcr.io/deeplearning-platform-release/tf2-cpu.2-6:latest",
+    packages_to_install=['tensorflow_io==0.21.0']
+)
 ```
-
-![Vertex pipelines result](03-pipeline-lwpython-tf/pipeline_lwpython.png)
 
 
 ## Lab 04: two-step pipeline with lightweight Python components and XGB
 
-Demo code of a production pipeline with the following services:
+Using two datasets (beans) of different sizes, this code runs two pipelines and makes a pipeline comparison using Vertex AI:
 
 * **[Vertex Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction)**
 * **[Vertex ML Metadata](https://cloud.google.com/vertex-ai/docs/ml-metadata/introduction)**
 
-![Vertex pipelines result](04-pipeline-lwpython-xgb/pipeline_lwpython_xgb.png)
+<img src="04-pipeline-lwpython-xgb/pipeline_lwpython_xgb.png" alt="Vertex pipelines result" width="300"/>
 
 
 ## Lab 05: Simple TFX pipeline with Vertex training and prediction components
+
+As dataset, we will use same Palmer Penguins dataset. There are four numeric features in this dataset which were already normalized to have range [0,1]. We will build a classification model which predicts the species of penguins. Most code of this example is taken from https://www.tensorflow.org/tfx/tutorials/tfx/penguin_simple.
+
+
+Setup. You need to upload these two files to GCS:
+1. Dataset at `gs://download.tensorflow.org/data/palmer_penguins/penguins_processed.csv` to `DATA_ROOT` folder. You need to make our own copy of the dataset, because TFX ExampleGen reads inputs from a directory.
+2. Trainer file `penguin_trainer.py` to `MODULE_ROOT` folder.
 
 Creates a three component penguin pipeline with TFX. You need these frameworks and in these versions:
 ```
@@ -70,7 +77,14 @@ TFX version: 1.3.0
 KFP version: 1.8.2
 ```
 
-![TFX pipeline on Vertex](05-pipeline-tfx-vertex/pipeline.png)
+Q: Error when calling `from tfx import v1 as tfx`: `AttributeError: module 'tensorflow.tools.docs.doc_controls' has no attribute 'inheritable_header'`   
+A: Downgrading `tensorflow-estimators` and `keras` to 2.6 resolved the issue:
+```
+pip3 install -U tensorflow-estimators==2.6.0
+pip3 install -U keras==2.6.0
+```
+
+<img src="05-pipeline-tfx-vertex/pipeline.png" alt="TFX pipeline on Vertex" width="300"/>
 
 
 ## Lab 06: Cloud Pub/Sub to trigger a pipeline based on Vertex monitoring alerts
@@ -196,7 +210,7 @@ gcloud auth configure-docker europe-west4-docker.pkg.dev
 gcloud builds submit --tag europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/vertex-iris-demo
 ```
 
-Run:
+Instructions:
 ```sh
 python3 13-training-tables-iris/mbsdk_all.py
 ```
@@ -212,8 +226,157 @@ This lab shows how to track training hyperparameters with Vertex experiments.
 
 ## Lab 20: simple prediction
 
-Simple prediction on the model deployed in Lab 3 and 10-11-12 (fraud detection dataset).
+Simple prediction on the model deployed in Lab 3 and 10-11-12 (fraud detection model). For both online and batch, make sure you modify the `endpoint_id` and `model_id` in the source code accordingly.
 
+* **Online predict:** Input format (note can actually be multiple):
+```python
+response = endpoint.predict([{'Time': 80422,'Amount': 17.99,'V1': -0.24,'V2': -0.027,'V3': 0.064,'V4': -0.16,'V5': -0.152,'V6': -0.3,'V7': -0.03,'V8': -0.01,'V9': -0.13,'V10': -0.13 ,'V11': -0.16,'V12': 0.06,'V13': -0.11,'V14': 2.1,'V15': -0.07,'V16': -0.033,'V17': -0.14,'V18': -0.08,'V19': -0.062,'V20': -0.08,'V21': -0.06,'V22': -0.088,'V23': -0.03,'V24': -0,15, 'V25': -0.04,'V26': -0.99,'V27': -0.13,'V28': 0.003}])
+Prediction(predictions=[[1.88683789e-05]], deployed_model_id='7739198465124597760', explanations=None)
+```
+
+* **Batch predict:** Input format, with multiple inputs as shown by `saved_model_cli`, content of file [batch_ulb_gcs_5.jsonl](batch_ulb_gcs_5.jsonl):
+```json
+{"Time": 80422, "Amount": 17.99, "V1": -0.24, "V2": -0.027, "V3": 0.064, "V4": -0.16, "V5": -0.152, "V6": -0.3, "V7": -0.03, "V8": -0.01, "V9": -0.13, "V10": -0.18, "V11": -0.16, "V12": 0.06, "V13": -0.11, "V14": 2.1, "V15": -0.07, "V16": -0.033, "V17": -0.14, "V18": -0.08, "V19": -0.062, "V20": -0.08, "V21": -0.06, "V22": -0.088, "V23": -0.03, "V24": 0.01, "V25": -0.04, "V26": -0.99, "V27": -0.13, "V28": 0.003}
+{"Time": 80522, "Amount": 18.99, "V1": -0.24, "V2": -0.027, "V3": 0.064, "V4": -0.16, "V5": -0.152, "V6": -0.3, "V7": -0.03, "V8": -0.01, "V9": -0.13, "V10": -0.18, "V11": -0.16, "V12": 0.06, "V13": -0.11, "V14": 2.1, "V15": -0.07, "V16": -0.033, "V17": -0.14, "V18": -0.08, "V19": -0.062, "V20": -0.08, "V21": -0.06, "V22": -0.088, "V23": -0.03, "V24": 0.01, "V25": -0.04, "V26": -0.99, "V27": -0.13, "V28": 0.003}
+{"Time": 80622, "Amount": 19.99, "V1": -0.24, "V2": -0.027, "V3": 0.064, "V4": -0.16, "V5": -0.152, "V6": -0.3, "V7": -0.03, "V8": -0.01, "V9": -0.13, "V10": -0.18, "V11": -0.16, "V12": 0.06, "V13": -0.11, "V14": 2.1, "V15": -0.07, "V16": -0.033, "V17": -0.14, "V18": -0.08, "V19": -0.062, "V20": -0.08, "V21": -0.06, "V22": -0.088, "V23": -0.03, "V24": 0.01, "V25": -0.04, "V26": -0.99, "V27": -0.13, "V28": 0.003}
+```
+
+Output of batch prediction:
+```json
+```
+
+This is `saved_model_cli` output:
+```sh
+saved_model_cli show --dir rafa --tag_set serve --signature_def serving_default
+
+The given SavedModel SignatureDef contains the following input(s):
+  inputs['Amount'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_Amount:0
+  inputs['Time'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_Time:0
+  inputs['V1'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V1:0
+  inputs['V10'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V10:0
+  inputs['V11'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V11:0
+  inputs['V12'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V12:0
+  inputs['V13'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V13:0
+  inputs['V14'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V14:0
+  inputs['V15'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V15:0
+  inputs['V16'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V16:0
+  inputs['V17'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V17:0
+  inputs['V18'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V18:0
+  inputs['V19'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V19:0
+  inputs['V2'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V2:0
+  inputs['V20'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V20:0
+  inputs['V21'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V21:0
+  inputs['V22'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V22:0
+  inputs['V23'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V23:0
+  inputs['V24'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V24:0
+  inputs['V25'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V25:0
+  inputs['V26'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V26:0
+  inputs['V27'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V27:0
+  inputs['V28'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V28:0
+  inputs['V3'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V3:0
+  inputs['V4'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V4:0
+  inputs['V5'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V5:0
+  inputs['V6'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V6:0
+  inputs['V7'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V7:0
+  inputs['V8'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V8:0
+  inputs['V9'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: serving_default_V9:0
+The given SavedModel SignatureDef contains the following output(s):
+  outputs['dense_1'] tensor_info:
+      dtype: DT_FLOAT
+      shape: (-1, 1)
+      name: StatefulPartitionedCall:0
+Method name is: tensorflow/serving/predict
+```
 
 ## References
 

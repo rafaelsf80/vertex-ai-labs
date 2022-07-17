@@ -14,12 +14,13 @@ from kfp.v2.dsl import (
     Metrics,
 )
 
-PROJECT_ID = 'windy-site-254307'
-MY_STAGING_BUCKET = 'caip-prediction-custom-uscentral1'
-LOCATION = 'us-central1'
-USER='rafaelsanchez'
+PROJECT_ID = 'argolis-rafaelsanchez-ml-dev'
+MY_STAGING_BUCKET = 'argolis-vertex-europewest4'
+LOCATION = 'europe-west4'
+USER = 'rafaelsanchez'
 PIPELINE_ROOT = 'gs://{}/pipeline_root/{}'.format(MY_STAGING_BUCKET, USER)
-BIGQUERY_URI = 'bq://windy-site-254307.public.ulb_'
+BIGQUERY_URI = 'bq://argolis-rafaelsanchez-ml-dev.ml_datasets_europewest4.ulb_'
+
 
 FEATURES = ["Amount", "V1", "V2","V3", "V4",
           "V5", "V6", "V7", "V8", "V9", "V10", "V11",
@@ -33,8 +34,8 @@ TARGET = 'Class'
 # Preprocess component
 ##############
 @component(
-    base_image='python:3.9', # Use a different base image.
-    packages_to_install=['tensorflow', 'tensorflow_io']
+    base_image="gcr.io/deeplearning-platform-release/tf2-cpu.2-6:latest",
+    packages_to_install=['tensorflow_io==0.21.0']
 )
 def preprocess(
     # An input parameter of type string.
@@ -206,13 +207,13 @@ def deploy(
   logging.getLogger().setLevel(logging.INFO)
 
   from google.cloud import aiplatform
-  aiplatform.init(project='windy-site-254307')
+  #aiplatform.init(project=PROJECT_ID)
 
   # Upload model
   uploaded_model = aiplatform.Model.upload(
       display_name=f'pipeline-lw-tf',
       artifact_uri=model.uri,
-      serving_container_image_uri='us-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-3:latest'
+      serving_container_image_uri="europe-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-6:latest",
   )
   logging.info('uploaded model: %s', uploaded_model.resource_name)
 
@@ -251,19 +252,17 @@ def pipeline(message: str):
 
 # Compile and submit
 from kfp.v2 import compiler
-from google.cloud.aiplatform import pipeline_jobs
+from google.cloud import aiplatform
 
+# Compile and run the pipeline
+aiplatform.init(project=PROJECT_ID, location=LOCATION)
 
 compiler.Compiler().compile(pipeline_func=pipeline,                                                     
-  package_path='3-pipeline-lwpython-tf/demo-lw-pipeline-tf.json')
+  package_path='demo-lw-pipeline-tf.json')
 
-from datetime import datetime
-TIMESTAMP = datetime.now().strftime("%Y%m%d%H%M%S")
-
-pipeline_jobs.PipelineJob(
+aiplatform.PipelineJob(
     display_name="pipeline_lw_tf",
-    template_path="3-pipeline-lwpython-tf/demo-lw-pipeline-tf.json",
-    job_id="pipeline-lwpython-tf-uscentral1-{0}".format(TIMESTAMP),
+    template_path="demo-lw-pipeline-tf.json",
     parameter_values={'message': "Hello, World"},
     enable_caching=True,
-).run(sync=False)
+).submit()

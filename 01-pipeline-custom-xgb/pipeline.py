@@ -1,103 +1,80 @@
-from kfp.v2 import components
-from kfp.v2 import dsl
+import kfp
 from kfp.v2 import compiler
+from kfp.v2.dsl import pipeline
 
 # This pipeline uses a public dataset at:
 # gs://financial_fraud_detection/fraud_data_kaggle.csv
 
-generate_op = components.load_component_from_text("""
-name: GenerateData
-inputs:
-- {name: project_id,          type: String, default: 'windy-site-254307', description: 'GCP project_id'}
-- {name: temp_bucket,         type: String, default: 'caip-pipelines-xgb-demo-fraud-detection-uscentral1', description: 'Temporal bucket in GCS'}
-- {name: gcs_dataset_filename,type: String, default: 'gs://financial_fraud_detection/fraud_data_kaggle.csv', description: 'dataset'}
-- {name: model_output_bucket, type: String, default: 'caip-pipelines-xgb-demo-fraud-detection-uscentral1', description: 'Model output bucket in GCS'}
-- {name: experiment_name,     type: String, default: 'exp01', description: 'Experiment name'}
-outputs:
-- {name: X_train, type: Dataset}
-- {name: X_test, type: Dataset}
-- {name: y_train, type: Dataset}
-- {name: y_test, type: Dataset}
-implementation:
-  container:
-    image: gcr.io/windy-site-254307/xgboost-fraud-detection-generatedata:fcee0b6-dirty
-    command:
-    - python3
-    - /app/generatedata_script.py
-    args:
-    - --project_id
-    - {inputValue: project_id}
-    - --temp_bucket
-    - {inputValue: temp_bucket}
-    - --gcs_dataset_filename
-    - {inputValue: gcs_dataset_filename}
-    - --model_output_bucket
-    - {inputValue: model_output_bucket}
-    - --experiment_name
-    - {inputValue: experiment_name}
-    - --x_train_uri
-    - {outputUri: X_train}
-    - --x_test_uri
-    - {outputUri: X_test}
-    - --y_train_uri
-    - {outputUri: y_train}
-    - --y_test_uri
-    - {outputUri: y_test}
-""")
+PROJECT_ID = 'argolis-rafaelsanchez-ml-dev'
+LOCATION = 'us-central1'
+MY_STAGING_BUCKET = 'argolis-vertex-uscentral'
+PIPELINE_ROOT = 'gs://argolis-vertex-uscentral1'
+SOURCE_DATA = 'gs://financial_fraud_detection/fraud_data_kaggle.csv'
+EXPERIMENT_NAME = 'exp01'
 
-train_op = components.load_component_from_text("""
-name: Train
-inputs:
-- {name: project_id,                  type: String,  default: 'windy-site-254307', description: 'GCP project_id'}
-- {name: experiment_name,             type: String,  default: 'exp01', description: 'Experiment name'}
-- {name: xgboost_param_max_depth,     type: Integer, default: '10', description: 'hyperparameter'}
-- {name: xgboost_param_learning_rate, type: Float,   default: '0.2', description: 'hyperparameter'}
-- {name: xgboost_param_n_estimators,  type: Integer, default: '200', description: 'hyperparameter'}
-- {name: x_train, type: Dataset}
-- {name: x_test, type: Dataset}
-- {name: y_train, type: Dataset}
-- {name: y_test, type: Dataset}
-outputs:
-- {name: model, type: Model}
-- {name: metrics, type: Metrics}
-implementation:
-  container:
-    image: gcr.io/windy-site-254307/xgboost-fraud-detection-trainer:fcee0b6-dirty
-    command:
-    - python3
-    - /app/trainer_script.py
-    args:
-    - --project_id
-    - {inputValue: project_id} 
-    - --experiment_name
-    - {inputValue: experiment_name}
-    - --xgboost_param_max_depth
-    - {inputValue: xgboost_param_max_depth}   
-    - --xgboost_param_learning_rate
-    - {inputValue: xgboost_param_learning_rate} 
-    - --xgboost_param_n_estimators
-    - {inputValue: xgboost_param_n_estimators}                    
-    - --x_train_uri
-    - {inputUri: x_train}
-    - --x_test_uri
-    - {inputUri: x_test}
-    - --y_train_uri
-    - {inputUri: y_train}
-    - --y_test_uri
-    - {inputUri: y_test}
-    - --output_model_uri
-    - {outputUri: model}
-    - --output_metrics_uri
-    - {outputUri: metrics}
-""")
-
-@dsl.pipeline(name='fraud-detection-demo-custom-uscentral1')
+@pipeline(name='01-fraud-detection-demo-custom-uscentral1')
 def pipeline():
-  generate = generate_op()
-  train = (train_op(x_train=generate.outputs['X_train'],
-      x_test=generate.outputs['X_test'],
-      y_train=generate.outputs['y_train'],
-      y_test=generate.outputs['y_test']).
+  generate_op = kfp.components.load_component_from_text("""
+    name: GenerateData
+    inputs:
+    - {name: project_id,          type: String, default: 'argolis-rafaelsanchez-ml-dev', description: 'GCP project_id'}
+    - {name: temp_bucket,         type: String, default: 'argolis-vertex-uscentral1', description: 'Temporal bucket in GCS'}
+    - {name: gcs_dataset_filename,type: String, default: 'gs://financial_fraud_detection/fraud_data_kaggle.csv', description: 'dataset'}
+    - {name: model_output_bucket, type: String, default: 'argolis-vertex-uscentral1', description: 'Model output bucket in GCS'}
+    - {name: experiment_name,     type: String, default: 'exp01', description: 'Experiment name'}
+    outputs:
+    - {name: x_train_artifact, type: Dataset}
+    - {name: x_test_artifact, type: Dataset}
+    - {name: y_train_artifact, type: Dataset}
+    - {name: y_test_artifact, type: Dataset}
+    implementation:
+      container:
+        image: europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/xgboost-fraud-detection-generatedata:fea26c9-dirty
+        command: [python, /app/generatedata_script.py]
+        args: [
+              --executor_input, {executorInput: null},
+              --function_to_execute, main
+            ]
+    """)
+
+  train_op = kfp.components.load_component_from_text("""
+    name: Train
+    inputs:
+    - {name: xgboost_param_max_depth,     type: Integer, default: 10, description: 'hyperparameter'}
+    - {name: xgboost_param_learning_rate, type: Float,   default: 0.2, description: 'hyperparameter'}
+    - {name: xgboost_param_n_estimators,  type: Integer, default: 200, description: 'hyperparameter'}
+    - {name: x_train_artifact, type: Dataset}
+    - {name: x_test_artifact, type: Dataset}
+    - {name: y_train_artifact, type: Dataset}
+    - {name: y_test_artifact, type: Dataset}
+    outputs:
+    - {name: model, type: Model}
+    - {name: metrics, type: Metrics}
+    - {name: metricsc, type: ClassificationMetrics}
+    implementation:
+      container:
+        image: europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/xgboost-fraud-detection-trainer:fea26c9-dirty
+        command: [python, /app/trainer_script.py]
+        args: [
+              --executor_input, {executorInput: null},
+              --function_to_execute, main
+            ]
+    """)
+
+  generate = generate_op(
+      project_id=PROJECT_ID, 
+      temp_bucket=MY_STAGING_BUCKET, 
+      gcs_dataset_filename=SOURCE_DATA, 
+      model_output_bucket=MY_STAGING_BUCKET, 
+      experiment_name=EXPERIMENT_NAME)
+  train = (train_op(
+      xgboost_param_max_depth=10, 
+      xgboost_param_learning_rate = 0.2, 
+      xgboost_param_n_estimators = 200,
+      x_train_artifact=generate.outputs['x_train_artifact'],
+      x_test_artifact=generate.outputs['x_test_artifact'],
+      y_train_artifact=generate.outputs['y_train_artifact'],
+      y_test_artifact=generate.outputs['y_test_artifact']).
     set_cpu_limit('4').
     set_memory_limit('14Gi').
     add_node_selector_constraint(
@@ -106,21 +83,19 @@ def pipeline():
     set_gpu_limit(1))
 
 # Compile and run the pipeline
-compiler.Compiler().compile(pipeline_func=pipeline, package_path='fraud_detection_demo_custom_uscentral1.json')
+compiler.Compiler().compile(pipeline_func=pipeline, package_path='01-fraud_detection_demo_custom_uscentral1.json')
  
-PIPELINE_ROOT='gs://caip-pipelines-xgb-demo-fraud-detection-uscentral1'
+from google.cloud import aiplatform
+from datetime import datetime
 
-from google.cloud.aiplatform import pipeline_jobs
-pipeline_jobs.PipelineJob(
-    display_name='fraud-detection-demo-custom-uscentral1',
-    template_path='fraud_detection_demo_custom_uscentral1.json',
+TIMESTAMP = datetime.now().strftime("%Y%m%d%H%M%S")
+
+aiplatform.init(project=PROJECT_ID, location=LOCATION)
+
+aiplatform.PipelineJob(
+    display_name='01-fraud-detection-demo-custom-uscentral1',
+    template_path='01-fraud_detection_demo_custom_uscentral1.json',
+    job_id="fraud-detection-demo-custom-uscentral1-{0}".format(TIMESTAMP),
     pipeline_root=PIPELINE_ROOT,
-    enable_caching=True
-).run(sync=False)
-
-
-# IMPORTANT: create_schedule_from_job_spec will be DEPRECATED
-# api_client.create_schedule_from_job_spec(
-#     job_spec_path='fraud_detection_demo_custom_uscentral1.json',
-#     schedule="* * * * *"
-# )
+    enable_caching=False
+).submit()
