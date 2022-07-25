@@ -9,7 +9,7 @@ LOCATION = 'europe-west4'
 
 aiplatform.init(project=PROJECT_ID, staging_bucket=STAGING_BUCKET, location=LOCATION)
 
-model = aiplatform.Model('projects/argolis-rafaelsanchez-ml-dev/locations/europe-west4/models/8042426179879174144') #replace this with your model
+model = aiplatform.Model('projects/argolis-rafaelsanchez-ml-dev/locations/europe-west4/models/8042426179879174144') # <--- CHANGE THIS
 # destination in GCS: prediction-<model-display-name>-<job-create-time>, where
 # timestamp is in YYYY-MM-DDThh:mm:ss.sssZ ISO-8601 format.
 # Inside of it files of type predictions_0001.<extension>

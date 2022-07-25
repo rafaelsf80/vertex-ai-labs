@@ -1,0 +1,305 @@
+{
+  "pipelineSpec": {
+    "components": {
+      "comp-deploy": {
+        "executorLabel": "exec-deploy",
+        "inputDefinitions": {
+          "artifacts": {
+            "model": {
+              "artifactType": {
+                "schemaTitle": "system.Model",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "vertex_endpoint": {
+              "artifactType": {
+                "schemaTitle": "system.Artifact",
+                "schemaVersion": "0.0.1"
+              }
+            },
+            "vertex_model": {
+              "artifactType": {
+                "schemaTitle": "system.Model",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        }
+      },
+      "comp-preprocess": {
+        "executorLabel": "exec-preprocess",
+        "inputDefinitions": {
+          "parameters": {
+            "bigquery_uri": {
+              "type": "STRING"
+            },
+            "features_input": {
+              "type": "STRING"
+            },
+            "target_input": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "output_data_path": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        }
+      },
+      "comp-train": {
+        "executorLabel": "exec-train",
+        "inputDefinitions": {
+          "artifacts": {
+            "dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          },
+          "parameters": {
+            "features_input": {
+              "type": "STRING"
+            },
+            "num_epochs": {
+              "type": "INT"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "metrics": {
+              "artifactType": {
+                "schemaTitle": "system.Metrics",
+                "schemaVersion": "0.0.1"
+              }
+            },
+            "output_model": {
+              "artifactType": {
+                "schemaTitle": "system.Model",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          }
+        }
+      }
+    },
+    "deploymentSpec": {
+      "executors": {
+        "exec-deploy": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "deploy"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "(python3 -m ensurepip || python3 -m ensurepip --user) && (PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'google-cloud-aiplatform' 'kfp==1.8.1' || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'google-cloud-aiplatform' 'kfp==1.8.1' --user) && \"$0\" \"$@\"",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef deploy(\n    # Input model.\n    model: Input[Model],\n    vertex_endpoint: Output[Artifact],\n    vertex_model: Output[Model]\n    ):\n\n  import logging\n  logging.getLogger().setLevel(logging.INFO)\n\n  from google.cloud import aiplatform\n  #aiplatform.init(project=PROJECT_ID)\n\n  # Upload model\n  uploaded_model = aiplatform.Model.upload(\n      display_name=f'pipeline-lw-tf',\n      artifact_uri=model.uri,\n      serving_container_image_uri=\"europe-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-6:latest\",\n  )\n  logging.info('uploaded model: %s', uploaded_model.resource_name)\n\n  # Deploy model\n  endpoint = uploaded_model.deploy(\n      machine_type='n1-standard-4'\n  )\n  logging.info('endpoint: %s', endpoint.resource_name)\n  vertex_endpoint.uri = endpoint.resource_name\n  vertex_model.uri = uploaded_model.resource_name\n\n"
+            ],
+            "image": "python:3.9"
+          }
+        },
+        "exec-preprocess": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "preprocess"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "(python3 -m ensurepip || python3 -m ensurepip --user) && (PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'tensorflow_io==0.21.0' 'kfp==1.8.1' || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'tensorflow_io==0.21.0' 'kfp==1.8.1' --user) && \"$0\" \"$@\"",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef preprocess(\n    # An input parameter of type string.\n    bigquery_uri: str, # eg 'bq://project-demos.london_bikes_weather.bikes_weather',\n    target_input: str,\n    features_input: str,\n    # Use OutputArtifact to get a metadata-rich handle to the output artifact of type `Dataset`.\n    output_data_path: OutputPath(\"Dataset\")):\n\n    #output_dataset: OutputArtifact(Dataset)):\n\n  import tensorflow as tf\n  from tensorflow_io.bigquery import BigQueryClient\n  from tensorflow.python.framework import dtypes\n\n  import logging\n  logging.getLogger().setLevel(logging.INFO)\n\n  TARGET = 'Class'\n\n  # Converts string to list\n  features = list(features_input.split(\",\"))\n  target = target_input\n\n  def caip_uri_to_fields(uri):\n    uri = uri[5:]\n    project, dataset, table = uri.split('.')\n    return project, dataset, table\n\n  def transform_row(row_dict):\n    # Trim all string tensors\n    trimmed_dict = { column:\n                    (tf.strings.strip(tensor) if tensor.dtype == 'string' else tensor) \n                    for (column,tensor) in row_dict.items()\n                    }\n    target_tmp = trimmed_dict.pop(target)\n\n    # esto no hace nada realmente\n    target_int = tf.cond(tf.equal(target_tmp, 1), \n                  lambda: tf.constant(1,dtype=tf.int64),\n                  lambda: tf.constant(0,dtype=tf.int64))\n    return (trimmed_dict, target_int)\n\n  def caip_uri_to_fields(uri):\n      uri = uri[5:]\n      project, dataset, table = uri.split('.')\n      return project, dataset, table\n\n  project, dataset, table = caip_uri_to_fields(bigquery_uri)\n  tensorflow_io_bigquery_client = BigQueryClient()\n  read_session = tensorflow_io_bigquery_client.read_session(\n      \"projects/\" + project,\n      project, table, dataset,\n      features + [TARGET],\n      [dtypes.float64] * 29 + [dtypes.int64],\n      requested_streams=2)\n\n  dataset = read_session.parallel_read_rows()\n  transformed_ds = dataset.map(transform_row)\n\n  # OutputArtifact supports rich metadata, let's add some: \n  #output_dataset.get().metadata['dataset_size'] = 10000\n  #output_dataset.get().metadata['info'] = 'Info about dataset'\n\n  # Save dataset in Metadata\n  # Use OutputArtifact.path to access a local file path for writing.\n  # One can also use OutputArtifact.uri to access the actual URI file path.\n  tf.data.experimental.save(transformed_ds, output_data_path)\n\n"
+            ],
+            "image": "gcr.io/deeplearning-platform-release/tf2-cpu.2-6:latest"
+          }
+        },
+        "exec-train": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "train"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "(python3 -m ensurepip || python3 -m ensurepip --user) && (PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'tensorflow' 'kfp==1.8.1' || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'tensorflow' 'kfp==1.8.1' --user) && \"$0\" \"$@\"",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.v2.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef train(\n    dataset: Input[Dataset],\n\n    #dataset: InputArtifact(Dataset),\n    features_input: str,\n    # Output artifact of type Model.\n    output_model: Output[Model],\n    metrics: Output[Metrics],\n    # An input parameter of type int with a default value.\n    num_epochs: int = 3,\n  ):        \n\n  import tensorflow as tf\n  from tensorflow import feature_column\n  import time\n\n  import logging\n  logging.getLogger().setLevel(logging.INFO)\n\n  # Converts string to list\n  features = list(features_input.split(\",\"))\n\n  full_transformed_ds = tf.data.experimental.load(dataset.path)\n\n  DATASET_FULL_SIZE = 100000\n  BATCH_SIZE = 2048\n\n  train_ds_size = int(0.64 * DATASET_FULL_SIZE)\n  valid_ds_size = int(0.16 * DATASET_FULL_SIZE)\n\n  dataset_train = full_transformed_ds.take(train_ds_size).shuffle(10).batch(BATCH_SIZE)\n  remaining = full_transformed_ds.skip(train_ds_size)  \n  dataset_eval = remaining.take(valid_ds_size).batch(BATCH_SIZE)\n  dataset_test = remaining.skip(valid_ds_size).batch(BATCH_SIZE)\n\n  logging.info('train_ds_size: %d', train_ds_size)\n\n  feature_columns = []\n\n  # numeric cols\n  for header in features:\n      feature_columns.append(feature_column.numeric_column(header))\n\n  feature_layer = tf.keras.layers.DenseFeatures(feature_columns)\n\n  Dense = tf.keras.layers.Dense\n  keras_model = tf.keras.Sequential(\n    [\n      feature_layer,\n        Dense(16, activation=tf.nn.relu),\n        Dense(8, activation=tf.nn.relu),\n        Dense(4, activation=tf.nn.relu),\n        Dense(1, activation=tf.nn.sigmoid),\n    ])\n\n  # Compile Keras model\n  keras_model.compile(\n      loss='binary_crossentropy', \n      metrics=['accuracy'],\n      optimizer='adam')\n\n  starttime = time.time()\n  hist=keras_model.fit(dataset_train, epochs=num_epochs, validation_data=dataset_eval)\n  endtime = time.time() - starttime\n  logging.info('evaluate: ', keras_model.evaluate(dataset_test))\n\n  # Save model in Metadata\n  keras_model.save(output_model.path)\n  logging.info('using model.uri: %s', output_model.uri)\n\n  #metrics.log_metric(\"accuracy\", hist.history['accuracy'])\n  metrics.log_metric(\"framework\", 'Tensorflow')\n  metrics.log_metric(\"time_to_train_in_seconds\", str(endtime-starttime))\n  metrics.log_metric(\"dataset_size\", DATASET_FULL_SIZE)\n  metrics.log_metric('message', 'this is a message')\n\n"
+            ],
+            "image": "python:3.9"
+          }
+        }
+      }
+    },
+    "pipelineInfo": {
+      "name": "pipeline-lw-tf"
+    },
+    "root": {
+      "dag": {
+        "outputs": {
+          "artifacts": {
+            "train-metrics": {
+              "artifactSelectors": [
+                {
+                  "outputArtifactKey": "metrics",
+                  "producerSubtask": "train"
+                }
+              ]
+            }
+          }
+        },
+        "tasks": {
+          "deploy": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-deploy"
+            },
+            "dependentTasks": [
+              "train"
+            ],
+            "inputs": {
+              "artifacts": {
+                "model": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "output_model",
+                    "producerTask": "train"
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "deploy"
+            }
+          },
+          "preprocess": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-preprocess"
+            },
+            "inputs": {
+              "parameters": {
+                "bigquery_uri": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "bq://argolis-rafaelsanchez-ml-dev.ml_datasets_europewest4.ulb_"
+                    }
+                  }
+                },
+                "features_input": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "Amount,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23,V24,V25,V26,V27,V28"
+                    }
+                  }
+                },
+                "target_input": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "Class"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "preprocess"
+            }
+          },
+          "train": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-train"
+            },
+            "dependentTasks": [
+              "preprocess"
+            ],
+            "inputs": {
+              "artifacts": {
+                "dataset": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "output_data_path",
+                    "producerTask": "preprocess"
+                  }
+                }
+              },
+              "parameters": {
+                "features_input": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "Amount,V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12,V13,V14,V15,V16,V17,V18,V19,V20,V21,V22,V23,V24,V25,V26,V27,V28"
+                    }
+                  }
+                },
+                "num_epochs": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "5"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "train"
+            }
+          }
+        }
+      },
+      "inputDefinitions": {
+        "parameters": {
+          "message": {
+            "type": "STRING"
+          }
+        }
+      },
+      "outputDefinitions": {
+        "artifacts": {
+          "train-metrics": {
+            "artifactType": {
+              "schemaTitle": "system.Metrics",
+              "schemaVersion": "0.0.1"
+            }
+          }
+        }
+      }
+    },
+    "schemaVersion": "2.0.0",
+    "sdkVersion": "kfp-1.8.1"
+  },
+  "runtimeConfig": {
+    "gcsOutputDirectory": "gs://argolis-vertex-europewest4/pipeline_root/rafaelsanchez"
+  }
+}

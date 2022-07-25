@@ -59,7 +59,7 @@ def _create_pipeline(pipeline_name: str, pipeline_root: str, data_root: str,
     # See https://cloud.google.com/vertex-ai/docs/reference/rest/v1/MachineSpec#acceleratortype
     # for available machine types.
     vertex_job_spec['worker_pool_specs'][0]['machine_spec'].update({
-        'accelerator_type': 'NVIDIA_TESLA_K80',
+        'accelerator_type': 'NVIDIA_TESLA_T4',
         'accelerator_count': 1
     })
 
@@ -85,6 +85,8 @@ def _create_pipeline(pipeline_name: str, pipeline_root: str, data_root: str,
   vertex_serving_spec = {
       'project_id': project_id,
       'endpoint_name': endpoint_name,
+      'min_replica_count': 1,
+      'max_replica_count': 4,
       'model_name': 'try_pusher',  # '-' is not allowed.
 
       # Remaining argument is passed to aiplatform.Model.deploy()
@@ -104,7 +106,7 @@ def _create_pipeline(pipeline_name: str, pipeline_root: str, data_root: str,
   serving_image = 'europe-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-6:latest'
   if use_gpu:
     vertex_serving_spec.update({
-        'accelerator_type': 'NVIDIA_TESLA_K80',
+        'accelerator_type': 'NVIDIA_TESLA_T4',
         'accelerator_count': 1
     })
     serving_image = 'europe-docker.pkg.dev/vertex-ai/prediction/tf2-gpu.2-6:latest'

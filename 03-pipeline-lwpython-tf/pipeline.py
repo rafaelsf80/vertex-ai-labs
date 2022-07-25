@@ -264,5 +264,5 @@ aiplatform.PipelineJob(
     display_name="pipeline_lw_tf",
     template_path="demo-lw-pipeline-tf.json",
     parameter_values={'message': "Hello, World"},
-    enable_caching=True,
+    enable_caching=True
 ).submit()
