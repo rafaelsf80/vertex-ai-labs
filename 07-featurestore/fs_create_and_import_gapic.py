@@ -1,38 +1,25 @@
-import datetime
-import os
-import subprocess
-import argparse
-import logging
-
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
-
-import pandas as pd
-import xgboost as xgb
-
-from google.cloud import storage
-from google.cloud import bigquery
-
 from google.api_core import operations_v1
-from google.cloud.aiplatform_v1beta1 import FeaturestoreOnlineServingServiceClient
-from google.cloud.aiplatform_v1beta1 import FeaturestoreServiceClient
-from google.cloud.aiplatform_v1beta1.types import featurestore_online_service as featurestore_online_service_pb2
-from google.cloud.aiplatform_v1beta1.types import entity_type as entity_type_pb2
-from google.cloud.aiplatform_v1beta1.types import feature as feature_pb2
-from google.cloud.aiplatform_v1beta1.types import featurestore as featurestore_pb2
-from google.cloud.aiplatform_v1beta1.types import featurestore_service as featurestore_service_pb2
-from google.cloud.aiplatform_v1beta1.types import io as io_pb2
-from google.protobuf.timestamp_pb2 import Timestamp
-from google.cloud.aiplatform_v1beta1.types import featurestore_monitoring as featurestore_monitoring_pb2
+from google.cloud.aiplatform_v1 import FeaturestoreOnlineServingServiceClient
+from google.cloud.aiplatform_v1 import FeaturestoreServiceClient
+from google.cloud.aiplatform_v1.types import FeatureSelector, IdMatcher
+
+from google.cloud.aiplatform_v1.types import featurestore_online_service as featurestore_online_service_pb2
+from google.cloud.aiplatform_v1.types import entity_type as entity_type_pb2
+from google.cloud.aiplatform_v1.types import feature as feature_pb2
+from google.cloud.aiplatform_v1.types import featurestore as featurestore_pb2
+from google.cloud.aiplatform_v1.types import featurestore_service as featurestore_service_pb2
+from google.cloud.aiplatform_v1.types import io as io_pb2
+from google.cloud.aiplatform_v1.types import featurestore_monitoring as featurestore_monitoring_pb2
 from google.protobuf.duration_pb2 import Duration
+
+from datetime import datetime
 
 # Set up project, location, featurestore ID and endpoints
 PROJECT_ID = "argolis-rafaelsanchez-ml-dev"  
 LOCATION = "us-central1" 
 API_ENDPOINT = "us-central1-aiplatform.googleapis.com"  
-FEATURESTORE_ID = "fraud_detection_demo_monitoring_4"
-FEATURESTORE_RESOURCE_NAME = "projects/989788194604/locations/us-central1/featurestores/fraud_detection_demo_monitoring_4"
+FEATURESTORE_ID = "fraud_detection_demo_monitoring_old_final2"
+FEATURESTORE_RESOURCE_NAME = "projects/989788194604/locations/us-central1/featurestores/fraud_detection_demo_monitoring_old_final2"
 
 # Create admin_client for CRUD and data_client for reading feature values.
 admin_client = FeaturestoreServiceClient(
@@ -139,14 +126,14 @@ def create_transaction_entity():
 
 # Batch ingest (import data from GCS)
 # Transaction entity. Expect o(10 minutes) if the number of rows is large.
+TIMESTAMP=datetime(2021, 1, 1, 9, 30)
 def batch_ingestion_transactions():
 
-    timestamp = Timestamp().GetCurrentTime()
     import_request_transaction = featurestore_service_pb2.ImportFeatureValuesRequest(
         entity_type=admin_client.entity_type_path(PROJECT_ID, LOCATION,
                                                 FEATURESTORE_ID, "transaction"),
         csv_source=io_pb2.CsvSource(
-            gcs_source=io_pb2.GcsSource(uris=["gs://argolis-vertex-uscentral1/fraud_data_kaggle_5000.csv"]) # 500 internal error for 1M rows, tried 5000 rows
+            gcs_source=io_pb2.GcsSource(uris=["gs://argolis-vertex-uscentral1/fraud_data_kaggle_5000.csv"]) # 500 internal error for 1M rows, works with 5000 rows
         ),
         feature_specs=[
             featurestore_service_pb2.ImportFeatureValuesRequest.FeatureSpec(
@@ -161,8 +148,8 @@ def batch_ingestion_transactions():
                 id="newbalance_dest", source_field = 'newbalanceDest')
         ],
         entity_id_field="nameOrig", # <--- NOTICE ENTITY_ID. MUST BE STRING TYPE AND MUST EXIST IN THE TABLE
-        #feature_time_field="fecha_hora_transaccion",
-        feature_time=timestamp, # unique timestamp for all
+        #feature_time_field="isFraud", 
+        feature_time=TIMESTAMP, # unique timestamp for all
         worker_count=5)
     print('Batch ingestion for "transaction" entity ...')
     ingestion_lro = admin_client.import_feature_values(import_request_transaction)
@@ -173,17 +160,19 @@ def batch_ingestion_transactions():
 
 def online_serving():
     print("Online serving...")
-    feature_selector = entity_type_pb2.FeatureSelector(
-        id_matcher=entity_type_pb2.IdMatcher(
-            ids=["oldbalance_orig", "newbalance_orig"]))
+
+    feature_selector = FeatureSelector(
+        id_matcher=IdMatcher(ids=["oldbalance_orig", "newbalance_orig"])
+    )
 
     print(data_client.read_feature_values(    
-    featurestore_online_service_pb2.ReadFeatureValuesRequest(
-        entity_type=admin_client.entity_type_path(PROJECT_ID, LOCATION, "fraud_detection_demo_monitoring", "transaction"),
-        entity_id="C1231006815",
-        feature_selector=feature_selector)))
+        featurestore_online_service_pb2.ReadFeatureValuesRequest(
+            entity_type=admin_client.entity_type_path(PROJECT_ID, LOCATION, FEATURESTORE_ID, "transaction"),
+            entity_id="C1231006815",
+            feature_selector=feature_selector,)))
+    
 
-        
+
 
 ###################
 # Uncomment only the STEPS you want to execute

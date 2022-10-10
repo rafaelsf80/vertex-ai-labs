@@ -166,9 +166,23 @@ statsAnomaliesBaseDirectory:
 updateTime: '2021-10-25T09:15:55.176995Z'
 ```
 
+
 ## Lab 07: Feature Store
 
-Create a Managed Vertex Feature Store, importing data and perform online and batch serving.
+Creates a **Managed Vertex AI Feature Store**, importing data and perform online and batch serving. The following scripts are provided:
+
+* `fs_create_and_import_fraud.py`: create a Feature Store and perform a batch ingestion of 5000 samples from the [Kaggle fraud detection dataset](gs://financial_fraud_detection/fraud_data_kaggle.csv), stored in GCS.
+* `fs_create_and_import_gapic.py`: same as previous one, but using gapic library and enabling monitoring.
+* `fs_create_and_import_ulb.py`: creates a Feature Store and perform a batch ingestion of the ULB dataset stored in BigQuery.
+* `fs_delete.py`: removes an existing Feature Store.
+* `fs_online_serving.py`: performs online serving over an existing Feature Store.
+* `fs_batch_serving.py`: performs batch serving over an existing Feature Store.
+
+You must upload the following data to GCS and BigQuery:
+* `fraud_data_kaggle_5000.csv`: required for the scripts working with the Kaggle fraud detection dataset (`fs_create_and_import_fraud.py` and `fs_create_and_import_gapic.py`).
+* `read_entity_instance.csv`: required for batch serving (script `fs_batch_serving.py`).
+* A copy of the ULB dataset should also be stored in BigQuery to run the script `fs_create_and_import_ulb.py` (constant `BQ_SOURCE`).
+
 
 ## Labs 10-11-12: Vertex custom training (ULB dataset) with pre-built containers
 
