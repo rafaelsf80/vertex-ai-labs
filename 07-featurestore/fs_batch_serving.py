@@ -5,12 +5,12 @@ from google.cloud.aiplatform import Featurestore
 
 PROJECT_ID = "argolis-rafaelsanchez-ml-dev"  
 LOCATION = "us-central1" 
-FEATURESTORE_ID = "fraud_detection_demo_monitoring_18"
+FEATURESTORE_ID = "fraud_detection_demo_monitoring"
 INPUT_CSV_FILE = "gs://argolis-vertex-uscentral1/read_entity_instance.csv"  # ground-truth data in GCS. BatchReadFeatureValues API takes this table as input and returns a complete table for training.
 
 
 # Output dataset
-DESTINATION_DATA_SET = "OUTPUT_DATASET1"  
+DESTINATION_DATA_SET = "OUTPUT_DATASET"  
 TIMESTAMP = datetime.now().strftime("%Y%m%d%H%M%S")
 DESTINATION_DATA_SET = "{prefix}_{timestamp}".format(
     prefix=DESTINATION_DATA_SET, timestamp=TIMESTAMP

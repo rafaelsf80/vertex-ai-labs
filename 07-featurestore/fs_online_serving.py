@@ -2,7 +2,7 @@ from google.cloud.aiplatform import Featurestore
 
 PROJECT_ID = "argolis-rafaelsanchez-ml-dev"  
 LOCATION = "us-central1" 
-FEATURESTORE_ID = "fraud_detection_demo_monitoring_old4"
+FEATURESTORE_ID = "fraud_detection_demo_monitoring"
 
 print("********** Online Serving Feature Store ", FEATURESTORE_ID)
 

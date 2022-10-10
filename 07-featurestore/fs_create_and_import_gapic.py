@@ -18,8 +18,8 @@ from datetime import datetime
 PROJECT_ID = "argolis-rafaelsanchez-ml-dev"  
 LOCATION = "us-central1" 
 API_ENDPOINT = "us-central1-aiplatform.googleapis.com"  
-FEATURESTORE_ID = "fraud_detection_demo_monitoring_old_final2"
-FEATURESTORE_RESOURCE_NAME = "projects/989788194604/locations/us-central1/featurestores/fraud_detection_demo_monitoring_old_final2"
+FEATURESTORE_ID = "fraud_detection_demo_monitoring"
+FEATURESTORE_RESOURCE_NAME = "projects/989788194604/locations/us-central1/featurestores/fraud_detection_demo_monitoring"
 
 # Create admin_client for CRUD and data_client for reading feature values.
 admin_client = FeaturestoreServiceClient(

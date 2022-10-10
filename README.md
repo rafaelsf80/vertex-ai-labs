@@ -103,7 +103,6 @@ As stated before, two files must be uploaded to GCS for the retraining:
 
 Cloud Scheduler is configured with frequency `0 9 * * *` (see other sample schedules [here](https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules#sample_schedules)), i.e. one execution every day at 9am that will run the Cloud Function.
 
-![Retraining pipeline](06-pipeline-retraining/architecture.png)
 
 FAQ:
 * In case you get this error when creating the **Model monitoring job**, add the `bigquery insert` permission to the service account.
@@ -181,7 +180,7 @@ Creates a **Managed Vertex AI Feature Store**, importing data and perform online
 You must upload the following data to GCS and BigQuery:
 * `fraud_data_kaggle_5000.csv`: required for the scripts working with the Kaggle fraud detection dataset (`fs_create_and_import_fraud.py` and `fs_create_and_import_gapic.py`).
 * `read_entity_instance.csv`: required for batch serving (script `fs_batch_serving.py`).
-* A copy of the ULB dataset should also be stored in BigQuery to run the script `fs_create_and_import_ulb.py` (constant `BQ_SOURCE`).
+* A copy of the ULB dataset must also be stored in BigQuery to run the script `fs_create_and_import_ulb.py` (refer to constant `BQ_SOURCE`).
 
 
 ## Labs 10-11-12: Vertex custom training (ULB dataset) with pre-built containers
