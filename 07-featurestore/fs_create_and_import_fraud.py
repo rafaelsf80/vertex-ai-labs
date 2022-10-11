@@ -3,8 +3,8 @@ from google.cloud.aiplatform import Feature, Featurestore
 
 
 PROJECT_ID = "argolis-rafaelsanchez-ml-dev"  
-LOCATION = "us-central1" 
-FEATURESTORE_ID = "fraud_detection_demo_monitoring"
+LOCATION = "europe-west4" 
+FEATURESTORE_ID = "fraud_detection_demo_monitoring_super_new"
 ONLINE_STORE_FIXED_NODE_COUNT = 1
 
 
@@ -60,13 +60,14 @@ transaction_features = transactions_entity_type.batch_create_features(
     feature_configs=transactions_feature_configs,
 )
 
-my_features = Feature.search(query="featurestore_id={}".format(FEATURESTORE_ID))
-print(my_features)
+# Comment this, since it runs too quickly and features ar not ready in some regions
+#my_features = Feature.search(query="featurestore_id={}".format(FEATURESTORE_ID))
+#print(my_features)
 
-double_features = Feature.search(
-    query="value_type=DOUBLE AND featurestore_id={}".format(FEATURESTORE_ID)
-)
-print(double_features[1].gca_resource)
+#double_features = Feature.search(
+#    query="value_type=DOUBLE AND featurestore_id={}".format(FEATURESTORE_ID)
+#)
+#print(double_features[1].gca_resource)
 
 
 # Batch ingest (import data from GCS)
@@ -83,7 +84,7 @@ FEATURE_SOURCE_FIELDS = {
 }
 
 TRANSACTIONS_ENTITY_ID_FIELD = "nameOrig" # <--- NOTICE ENTITY_ID. MUST BE STRING TYPE AND MUST EXIST IN THE TABLE
-TRANSACTIONS_GCS_SOURCE_URI = "gs://argolis-vertex-uscentral1/fraud_data_kaggle_5000.csv" 
+TRANSACTIONS_GCS_SOURCE_URI = "gs://argolis-vertex-europewest4/fraud_data_kaggle_5000.csv" 
 GCS_SOURCE_TYPE = "csv" # could be avro
 WORKER_COUNT = 1
 

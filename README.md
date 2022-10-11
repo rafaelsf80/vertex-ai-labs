@@ -21,6 +21,7 @@ Output of pipeline with custom containers:
 
 <img src="01-pipeline-custom-xgb/pipeline_custom.png" alt="Vertex pipelines result" width="300"/>
 
+
 ## Lab 02: three-step pipeline with GCP operators
 
 This pipeline uses the ULB dataset (tabular detaset, fraud detection) with AutoML, using GCP operators. The three-step pipeline include loading data, training and prediction.
@@ -28,6 +29,7 @@ This pipeline uses the ULB dataset (tabular detaset, fraud detection) with AutoM
 Output of pipeline with GCP components:
 
 <img src="02-pipeline-gcp-operators/pipeline_gccaip.png" alt="Vertex pipelines result" width="300"/>
+
 
 ## Lab 03: three-step pipeline with lightweight Python components and TensorFlow
 
@@ -172,12 +174,12 @@ Creates a **Managed Vertex AI Feature Store**, importing data and perform online
 
 * `fs_create_and_import_fraud.py`: create a Feature Store and perform a batch ingestion of 5000 samples from the [Kaggle fraud detection dataset](gs://financial_fraud_detection/fraud_data_kaggle.csv), stored in GCS.
 * `fs_create_and_import_gapic.py`: same as previous one, but using gapic library and enabling monitoring.
-* `fs_create_and_import_ulb.py`: creates a Feature Store and perform a batch ingestion of the ULB dataset stored in BigQuery.
+* `fs_create_and_import_ulb.py`: creates a Feature Store and perform a batch ingestion of the ULB dataset, stored in BigQuery.
 * `fs_delete.py`: removes an existing Feature Store.
 * `fs_online_serving.py`: performs online serving over an existing Feature Store.
 * `fs_batch_serving.py`: performs batch serving over an existing Feature Store.
 
-You must upload the following data to GCS and BigQuery:
+You must upload the following data to GCS and BigQuery, in the same region as the Feature Store:
 * `fraud_data_kaggle_5000.csv`: required for the scripts working with the Kaggle fraud detection dataset (`fs_create_and_import_fraud.py` and `fs_create_and_import_gapic.py`).
 * `read_entity_instance.csv`: required for batch serving (script `fs_batch_serving.py`).
 * A copy of the ULB dataset must also be stored in BigQuery to run the script `fs_create_and_import_ulb.py` (refer to constant `BQ_SOURCE`).
