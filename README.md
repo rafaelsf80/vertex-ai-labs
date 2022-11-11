@@ -12,10 +12,10 @@ Sample codes include pipelines, custom training and others. There are three ways
 3. **Python functions as Component**: easiest way. Use the `@dsl.component` decorator in KFP v2 to package a python function as a component. You can find some samples in **Labs 3 and 4**.
 
 
-## Lab 01: two-step pipeline with custom containers
+## Lab 01: three-step pipeline with custom containers
 
 This pipeline uses a public dataset at 
-[gs://financial_fraud_detection/fraud_data_kaggle.csv](gs://financial_fraud_detection/fraud_data_kaggle.csv) to run a two-step pipeline using custom containers. The Dockerfile definition of each container as well as the code is separated in each directory.
+[gs://financial_fraud_detection/fraud_data_kaggle.csv](gs://financial_fraud_detection/fraud_data_kaggle.csv) to run a three-step pipeline using custom containers. The Dockerfile definition of each container as well as the code is separated in each directory.
 
 Output of pipeline with custom containers:
 

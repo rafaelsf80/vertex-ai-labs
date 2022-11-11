@@ -26,7 +26,7 @@ def main(xgboost_param_max_depth: int,
     import numpy as np
     import pandas as pd
     import xgboost as xgb
-     
+
     X_train = pd.read_csv(x_train_artifact.path)
     X_test = pd.read_csv(x_test_artifact.path)
     y_train = pd.read_csv(y_train_artifact.path)
@@ -56,7 +56,11 @@ def main(xgboost_param_max_depth: int,
     
     y_pred = clf.predict(X_test)
     cm = confusion_matrix(y_pred, y_test)
-
+ 
+    # If you want to set a custom path, use .uri method. Then access using .path method. Do not modify .path directly
+    model.uri = f'{model.uri}.bst'
+    logging.info(f'model.path is {model.path} and model.uri is {model.uri}')
+    
     clf.save_model(model.path)
     #model = 'model.bst'
     #dump(model, model.path)

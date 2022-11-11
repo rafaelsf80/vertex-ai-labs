@@ -11,6 +11,7 @@ MY_STAGING_BUCKET = 'argolis-vertex-uscentral'
 PIPELINE_ROOT = 'gs://argolis-vertex-uscentral1'
 SOURCE_DATA = 'gs://financial_fraud_detection/fraud_data_kaggle.csv'
 EXPERIMENT_NAME = 'exp01'
+SERVING_CONTAINER_IMAGE = 'europe-docker.pkg.dev/vertex-ai/prediction/xgboost-cpu.1-1:latest'
 
 @pipeline(name='01-fraud-detection-demo-custom-uscentral1')
 def pipeline():
@@ -29,7 +30,7 @@ def pipeline():
     - {name: y_test_artifact, type: Dataset}
     implementation:
       container:
-        image: europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/xgboost-fraud-detection-generatedata:fea26c9-dirty
+        image: europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/xgboost-fraud-detection-generatedata:bcb8403
         command: [python, /app/generatedata_script.py]
         args: [
               --executor_input, {executorInput: null},
@@ -53,8 +54,27 @@ def pipeline():
     - {name: metricsc, type: ClassificationMetrics}
     implementation:
       container:
-        image: europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/xgboost-fraud-detection-trainer:fea26c9-dirty
+        image: europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/xgboost-fraud-detection-trainer:bcb8403-dirty
         command: [python, /app/trainer_script.py]
+        args: [
+              --executor_input, {executorInput: null},
+              --function_to_execute, main
+            ]
+    """)
+
+  deploy_op = kfp.components.load_component_from_text("""
+    name: Deploy
+    inputs:
+    - {name: project_id,              type: String, default: 'argolis-rafaelsanchez-ml-dev', description: 'GCP project_id'}
+    - {name: location,                type: String, default: 'us-central1', description: 'GCP region'}
+    - {name: serving_container_image, type: String, default: 'europe-docker.pkg.dev/vertex-ai/prediction/xgboost-cpu.1-1:latest', description: 'Serving Container Image URI'}
+    - {name: model, type: Model}
+    outputs:
+    - {name: endpoint, type: Artifact}
+    implementation:
+      container:
+        image: europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/xgboost-fraud-detection-deploy:bcb8403-dirty
+        command: [python, /app/deploy_script.py]
         args: [
               --executor_input, {executorInput: null},
               --function_to_execute, main
@@ -67,6 +87,7 @@ def pipeline():
       gcs_dataset_filename=SOURCE_DATA, 
       model_output_bucket=MY_STAGING_BUCKET, 
       experiment_name=EXPERIMENT_NAME)
+
   train = (train_op(
       xgboost_param_max_depth=10, 
       xgboost_param_learning_rate = 0.2, 
@@ -81,6 +102,14 @@ def pipeline():
       'cloud.google.com/gke-accelerator',
       'nvidia-tesla-k80').
     set_gpu_limit(1))
+
+  deploy = (deploy_op(
+      project_id=PROJECT_ID, 
+      location=LOCATION,
+      serving_container_image = SERVING_CONTAINER_IMAGE,
+      model=train.outputs['model']))
+
+
 
 # Compile and run the pipeline
 compiler.Compiler().compile(pipeline_func=pipeline, package_path='01-fraud_detection_demo_custom_uscentral1.json')

@@ -1,0 +1,6 @@
+google-cloud-aiplatform==1.10.0
+kfp==1.8.1
+fsspec
+gcsfs
+pandas
+pyarrow
