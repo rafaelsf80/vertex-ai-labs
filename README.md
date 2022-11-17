@@ -233,9 +233,15 @@ python3 13-training-tables-iris/mbsdk_all.py
 For more information about custom training in Vertex, visit the [official documentation](https://cloud.google.com/vertex-ai/docs/training/custom-training) and [this github repo](https://github.com/rafaelsf80/vertex-custom-training)
 
 
-## Lab 14: experiments
+## Lab 14: experiments and metrics visualization
 
-Vertex AI provides two tools for experiment tracking with Vertex experiments and Managed Tensorboard.
+Vertex AI provides tools for experiment tracking and metrics visualization:
+1. Vertex AI experiments
+2. Managed Tensorboard
+3. Model evaluation
+
+Vertex AI experiments
+
 This lab shows how to track training hyperparameters with Vertex experiments.
 
 
