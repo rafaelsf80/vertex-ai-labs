@@ -3,6 +3,7 @@ from google.cloud.aiplatform_v1 import FeaturestoreOnlineServingServiceClient
 from google.cloud.aiplatform_v1 import FeaturestoreServiceClient
 from google.cloud.aiplatform_v1.types import FeatureSelector, IdMatcher
 
+
 from google.cloud.aiplatform_v1.types import featurestore_online_service as featurestore_online_service_pb2
 from google.cloud.aiplatform_v1.types import entity_type as entity_type_pb2
 from google.cloud.aiplatform_v1.types import feature as feature_pb2
@@ -27,7 +28,6 @@ admin_client = FeaturestoreServiceClient(
 data_client = FeaturestoreOnlineServingServiceClient(
     client_options={"api_endpoint": API_ENDPOINT})
 
-
 # Create operation client to poll LRO status.
 def create_fs():
     lro_client = operations_v1.OperationsClient(admin_client.transport.grpc_channel)
@@ -46,7 +46,8 @@ def create_fs():
     admin_client.get_featurestore(name = admin_client.featurestore_path(PROJECT_ID, LOCATION, FEATURESTORE_ID))
 
 
-## Create entity 'transaction' and 5 features: amount,oldbalanceOrg,newbalanceOrig,oldbalanceDest,newbalanceDest
+# Create entity 'transaction' and 5 features: amount,oldbalanceOrg,newbalanceOrig,oldbalanceDest,newbalanceDest
+# Enable feature monitoring in all of them
 def create_transaction_entity():
     print(
          admin_client.create_entity_type(
@@ -55,14 +56,59 @@ def create_transaction_entity():
                                                      FEATURESTORE_ID),
                  entity_type_id="transaction",
                  entity_type=entity_type_pb2.EntityType(
-                     description="Transaction features",
-                     monitoring_config=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig(
-                        snapshot_analysis=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig.SnapshotAnalysis(
-                            monitoring_interval=Duration(seconds=3600),  # 1 day
-                )),            
+                     description="Transaction features"    
             ))).result())
 
+    # Feature monitoring requires v1
+    # Enable import feature analysis for users entity type.
+    admin_client.update_entity_type(
+        featurestore_service_pb2.UpdateEntityTypeRequest(
+            entity_type=entity_type_pb2.EntityType(
+                name=admin_client.entity_type_path(
+                    PROJECT_ID, LOCATION, FEATURESTORE_ID, "transaction"
+                ),
+                monitoring_config=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig(
+                    import_features_analysis=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig.ImportFeaturesAnalysis(
+                        anomaly_detection_baseline=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig.ImportFeaturesAnalysis.Baseline.LATEST_STATS,
+                        state=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig.ImportFeaturesAnalysis.State.ENABLED,
+                    ),
+                    numerical_threshold_config=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig.ThresholdConfig(
+                        value=0.001,
+                    ),
+                    categorical_threshold_config=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig.ThresholdConfig(
+                        value=0.001,
+                    ),
+                ),
+            ),
+        )
+    )
 
+    # Feature monitoring requires v1
+    # Enable snapshot analysis for users entity type.
+    admin_client.update_entity_type(
+        featurestore_service_pb2.UpdateEntityTypeRequest(
+            entity_type=entity_type_pb2.EntityType(
+                name=admin_client.entity_type_path(
+                    PROJECT_ID, LOCATION, FEATURESTORE_ID, "transaction"
+                ),
+                monitoring_config=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig(
+                    snapshot_analysis=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig.SnapshotAnalysis(
+                        monitoring_interval_days=1,  # 1 day
+                        staleness_days=30,
+                    ),
+                    numerical_threshold_config=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig.ThresholdConfig(
+                        value=0.001,
+                    ),
+                    categorical_threshold_config=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig.ThresholdConfig(
+                        value=0.001,
+                    ),
+                ),
+            ),
+        )
+    )
+
+    # Feature monitoring requires v1
+    # Feature creation. Enable feature monitoring
     admin_client.batch_create_features(
         parent=admin_client.entity_type_path(PROJECT_ID, LOCATION,
                                             FEATURESTORE_ID, "transaction"),
@@ -71,62 +117,43 @@ def create_transaction_entity():
                 feature=feature_pb2.Feature(
                     value_type=feature_pb2.Feature.ValueType.DOUBLE,
                     description="Amount of transaction",
-                    monitoring_config=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig(
-                        snapshot_analysis=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig.SnapshotAnalysis(
-                            monitoring_interval=Duration(seconds=3600),  # 2 days
-                        ),
-                    ),
+                    disable_monitoring=False
                 ),
                 feature_id="amount"),
             featurestore_service_pb2.CreateFeatureRequest(
                 feature=feature_pb2.Feature(
                     value_type=feature_pb2.Feature.ValueType.DOUBLE,
                     description="Old balance origin",
-                    monitoring_config=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig(
-                        snapshot_analysis=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig.SnapshotAnalysis(
-                            monitoring_interval=Duration(seconds=3600),  # 2 days
-                        ),
-                    ),
+                    disable_monitoring=False
                 ),
                 feature_id="oldbalance_orig"),
             featurestore_service_pb2.CreateFeatureRequest(
                 feature=feature_pb2.Feature(
                     value_type=feature_pb2.Feature.ValueType.DOUBLE,
                     description="New balance origin",
-                    monitoring_config=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig(
-                        snapshot_analysis=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig.SnapshotAnalysis(
-                            monitoring_interval=Duration(seconds=3600),  # 2 days
-                        ),
-                    ),
+                    disable_monitoring=False
                 ),
                 feature_id="newbalance_orig"),
             featurestore_service_pb2.CreateFeatureRequest(
                 feature=feature_pb2.Feature(
                     value_type=feature_pb2.Feature.ValueType.DOUBLE,
                     description="Old balance destination",
-                    monitoring_config=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig(
-                        snapshot_analysis=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig.SnapshotAnalysis(
-                            disabled=True,
-                        ),
-                    ),
+                    disable_monitoring=False
                 ),
                 feature_id="oldbalance_dest"),
             featurestore_service_pb2.CreateFeatureRequest(
                 feature=feature_pb2.Feature(
                     value_type=feature_pb2.Feature.ValueType.DOUBLE,
                     description="New balance destination",
-                    monitoring_config=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig(
-                        snapshot_analysis=featurestore_monitoring_pb2.FeaturestoreMonitoringConfig.SnapshotAnalysis(
-                            disabled=True,
-                        ),
-                    ),
+                    disable_monitoring=False
                 ),
                 feature_id="newbalance_dest")
         ])
 
+
 # Batch ingest (import data from GCS)
 # Transaction entity. Expect o(10 minutes) if the number of rows is large.
-TIMESTAMP=datetime(2021, 1, 1, 9, 30)
+TIMESTAMP=datetime(2023, 1, 23, 9, 30)
 def batch_ingestion_transactions():
 
     import_request_transaction = featurestore_service_pb2.ImportFeatureValuesRequest(
@@ -172,19 +199,15 @@ def online_serving():
             feature_selector=feature_selector,)))
     
 
-
-
 ###################
 # Uncomment only the STEPS you want to execute
 ###################
-
 
 
 # Represents featurestore resource path.
 BASE_RESOURCE_PATH = admin_client.common_location_path(PROJECT_ID, LOCATION)
 
 # STEP 1: Create feature store, entities and features. You MUST only do this ONCE
-
 create_fs()
 # STEP 2: Create entity "transaction" with its 5 features You MUST only do this ONCE
 create_transaction_entity()
@@ -197,10 +220,11 @@ for entity_type in admin_client.list_entity_types(
                                                 num_features))
 
 # Check all features from all Feature stores in the project
-print("********** All features from all Feature Stores")
-print(list(admin_client.search_features(location=BASE_RESOURCE_PATH)))
-print("********** All Feature Stores")
+print("********** Showing all Feature Stores in the current project")
 print(list(admin_client.list_featurestores(parent=BASE_RESOURCE_PATH)))
+print("********** Showing all features from all Feature Stores in the current project")
+print(list(admin_client.search_features(location=BASE_RESOURCE_PATH)))
+
 
 # # STEP 3: Batch ingestion. GCS must be in the same region as Feature Store
 batch_ingestion_transactions()

@@ -175,13 +175,13 @@ ulb_features = transactions_entity_type.batch_create_features(
 TRANSACTIONS_FEATURES_IDS = [feature.name for feature in transactions_entity_type.list_features()]
 TRANSACTIONS_FEATURE_TIME = "time"
 TRANSACTIONS_ENTITY_ID_FIELD = "id"
-BQ_SOURCE = 'bq://argolis-rafaelsanchez-ml-dev.ml_datasets_europewest4.ulb_clean'
+BQ_SOURCE = 'bq://argolis-rafaelsanchez-ml-dev.ml_datasets_europewest4.ulb_1'
 WORKER_COUNT = 1
 print(TRANSACTIONS_FEATURES_IDS)
 
 transactions_entity_type.ingest_from_bq(
     feature_ids=TRANSACTIONS_FEATURES_IDS,
-    feature_time=datetime(2021, 1, 1, 9, 30),
+    feature_time=TRANSACTIONS_FEATURE_TIME,#datetime(2021, 1, 1, 9, 30),
     entity_id_field=TRANSACTIONS_ENTITY_ID_FIELD,
     bq_source_uri=BQ_SOURCE,
     worker_count=WORKER_COUNT,

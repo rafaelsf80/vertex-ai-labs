@@ -179,10 +179,15 @@ Creates a **Managed Vertex AI Feature Store**, importing data and perform online
 * `fs_online_serving.py`: performs online serving over an existing Feature Store.
 * `fs_batch_serving.py`: performs batch serving over an existing Feature Store.
 
-You must upload the following data to GCS and BigQuery, in the same region as the Feature Store:
-* `fraud_data_kaggle_5000.csv`: required for the scripts working with the Kaggle fraud detection dataset (`fs_create_and_import_fraud.py` and `fs_create_and_import_gapic.py`).
-* `read_entity_instance.csv`: required for batch serving (script `fs_batch_serving.py`).
-* A copy of the ULB dataset must also be stored in BigQuery to run the script `fs_create_and_import_ulb.py` (refer to constant `BQ_SOURCE`).
+Setup:
+
+1. In case of using the Kaggle fraud detection dataset, required for the scripts `fs_create_and_import_fraud.py` and `fs_create_and_import_gapic.py`, you must upload to GCS the following file in **the same region** as the Feature Store: `fraud_data_kaggle_5000.csv`.
+2. In case of using the ULB dataset, required for the script `fs_create_and_import_ulb.py`, you must make a copy of the ULB dataset in BigQuery in **the same region** as the Feature Store (refer to constant `BQ_SOURCE`).
+3. In case of running the batch serving script (`fs_batch_serving.py`), you must upload to GCS the following file in **the same region** as the Feature Store: `read_entity_instance.csv`:
+
+Feature monitoring in Feature Store:
+
+The script `fs_create_and_import_gapic.py` enables feature monitoring using the gapic client. If you use the new SDK, you can enable the feature moniroting manually from the UI console. If you do not see any monitoring stats after 24 hours, note `TIMESTAMP` field must be included in the dataset (can not be set as a constant) and `Lookback window` is [set by default to 21 days as maximum](https://cloud.google.com/vertex-ai/docs/featurestore/monitoring#set_a_monitoring_configuration).
 
 
 ## Labs 10-11-12: Vertex custom training (ULB dataset) with pre-built containers

@@ -4,7 +4,7 @@ from google.cloud.aiplatform import Feature, Featurestore
 
 PROJECT_ID = "argolis-rafaelsanchez-ml-dev"  
 LOCATION = "europe-west4" 
-FEATURESTORE_ID = "fraud_detection_demo_monitoring_super_new"
+FEATURESTORE_ID = "fraud_detection_demo_monitoring"
 ONLINE_STORE_FIXED_NODE_COUNT = 1
 
 
