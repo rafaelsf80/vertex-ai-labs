@@ -1,5 +1,6 @@
 from datetime import datetime
-from google.cloud.aiplatform import Feature, Featurestore
+from google.cloud import aiplatform
+from google.cloud.aiplatform import Featurestore
 
 
 PROJECT_ID = "argolis-rafaelsanchez-ml-dev"  
@@ -7,6 +8,7 @@ LOCATION = "europe-west4"
 FEATURESTORE_ID = "fraud_detection_demo_monitoring"
 ONLINE_STORE_FIXED_NODE_COUNT = 1
 
+aiplatform.init(project=PROJECT_ID, location=LOCATION)
 
 # Create operation client to poll LRO status.
 fs = Featurestore.create(

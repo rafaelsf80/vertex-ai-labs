@@ -1,4 +1,3 @@
-from datetime import datetime
 from google.cloud import aiplatform
 from google.cloud.aiplatform import Featurestore
 

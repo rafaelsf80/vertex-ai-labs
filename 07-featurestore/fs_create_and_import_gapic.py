@@ -11,9 +11,10 @@ from google.cloud.aiplatform_v1.types import featurestore as featurestore_pb2
 from google.cloud.aiplatform_v1.types import featurestore_service as featurestore_service_pb2
 from google.cloud.aiplatform_v1.types import io as io_pb2
 from google.cloud.aiplatform_v1.types import featurestore_monitoring as featurestore_monitoring_pb2
-from google.protobuf.duration_pb2 import Duration
 
 from datetime import datetime
+
+from google.cloud import aiplatform
 
 # Set up project, location, featurestore ID and endpoints
 PROJECT_ID = "argolis-rafaelsanchez-ml-dev"  
@@ -21,6 +22,8 @@ LOCATION = "us-central1"
 API_ENDPOINT = "us-central1-aiplatform.googleapis.com"  
 FEATURESTORE_ID = "fraud_detection_demo_monitoring"
 FEATURESTORE_RESOURCE_NAME = "projects/989788194604/locations/us-central1/featurestores/fraud_detection_demo_monitoring"
+
+aiplatform.init(project=PROJECT_ID, location=LOCATION)
 
 # Create admin_client for CRUD and data_client for reading feature values.
 admin_client = FeaturestoreServiceClient(
