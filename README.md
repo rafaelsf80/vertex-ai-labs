@@ -204,7 +204,9 @@ Setup:
 gcloud beta ai tensorboards create --display-name ml-in-the-cloud-rafaelsanchez --project argolis-rafaelsanchez-ml-dev
 Created Vertex AI Tensorboard: projects/989788194604/locations/europe-west4/tensorboards/3449511023961178112
 ```
-3. Create a service account for the Tensorboard service. It must have the Storage Admin role (`roles/storage.admin`) and Vertex AI User role (`roles/aiplatform.user`) associated with it. Additionally the BQ Read session role (`bigquery.readsessions.create`) and BigQuery Data Editor (`bigquery.tables.get`) is required for this specific example.
+3. Create a service account for the Tensorboard service. It must have the Storage Admin role (`roles/storage.admin`) and Vertex AI User role (`roles/aiplatform.user`) associated with the Tensorboard service.
+
+> If you use Vertex AI Workbench, note there are actually **two service accounts**: the **compute engine service account**, which executes the full pipeline, and needs the  Service Account User and Vertex AI User roles; and the **service account specific for the training step** that requires Service Account User role, Storage Admin role, Vertex AI User role, BQ Read Session Userrole (`bigquery.readsessions.create`) and BigQuery Data Editor. All of them are required since thet training step must read from the dataset (and BigQuery) and must write in GCS for the Tensorboard service.
 
 Run:
 ```sh
@@ -248,6 +250,24 @@ Vertex AI provides tools for experiment tracking and metrics visualization:
 Vertex AI experiments
 
 This lab shows how to track training hyperparameters with Vertex experiments.
+
+
+## Lab 15: TabNet with Tabular workflows
+
+This lab creates a classsification model based on TabNet, using the ULB finantial dataset, and Vertex AI Tabular Workflows. 
+
+[TabNet](https://arxiv.org/abs/1908.07442) uses [sequential attention](https://proceedings.neurips.cc/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf) to choose which features to reason from at each decision step. This promotes interpretability and more efficient learning because the learning capacity is used for the most salient features.
+
+> You will need the latest Vertex SDK and pipeline component version for TabNet: `pip3 install --upgrade google-cloud-aiplatform google-cloud-pipeline-components --user -q`
+
+Configurable hyperparameters in this example are the following (note TabNet allows a hyperparameter tuning option to look for the best hyperparameters for your data):
+
+|Hyperparameter|
+|---|
+|max_steps|
+|max_train_secs|
+|learning_rate|
+
 
 
 ## Lab 20: simple prediction
