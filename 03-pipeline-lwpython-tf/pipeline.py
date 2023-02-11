@@ -206,7 +206,7 @@ def deploy(
   import logging
   logging.getLogger().setLevel(logging.INFO)
 
-  PROJECT_ID = 'argolis-rafaelsanchez-ml-dev'∂
+  PROJECT_ID = 'argolis-rafaelsanchez-ml-dev'
   LOCATION = 'europe-west4'
 
   from google.cloud import aiplatform
