@@ -206,8 +206,11 @@ def deploy(
   import logging
   logging.getLogger().setLevel(logging.INFO)
 
+  PROJECT_ID = 'argolis-rafaelsanchez-ml-dev'∂
+  LOCATION = 'europe-west4'
+
   from google.cloud import aiplatform
-  #aiplatform.init(project=PROJECT_ID)
+  aiplatform.init(project=PROJECT_ID, location=LOCATION)
 
   # Upload model
   uploaded_model = aiplatform.Model.upload(
