@@ -65,9 +65,19 @@ def pipeline():
       target_column = "Class"
   )
 
-  deploy_op = gcc_aip.ModelDeployOp(
-      model=training_op.outputs['model']
-      )
+  endpoint_op = gcc_aip.EndpointCreateOp(
+        project=PROJECT_ID,
+        location=LOCATION,
+        display_name="fraud-detection-demo_endpoint",
+    )
+
+  _ = gcc_aip.ModelDeployOp(
+        model=training_op.outputs["model"],
+        endpoint=endpoint_op.outputs["endpoint"],
+        dedicated_resources_machine_type="n1-standard-4",
+        dedicated_resources_min_replica_count=1,
+        dedicated_resources_max_replica_count=1,
+    )
 
 
 # Compile and run the pipeline
