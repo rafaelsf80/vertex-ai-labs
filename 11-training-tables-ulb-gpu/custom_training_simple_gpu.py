@@ -6,7 +6,7 @@ BUCKET = 'gs://argolis-vertex-europewest4'
 PROJECT_ID = 'argolis-rafaelsanchez-ml-dev'
 LOCATION = 'europe-west4'
 SERVICE_ACCOUNT = 'tensorboard-sa@argolis-rafaelsanchez-ml-dev.iam.gserviceaccount.com'
-TENSORBOARD_RESOURCE = 'projects/989788194604/locations/europe-west4/tensorboards/3449511023961178112'
+TENSORBOARD_RESOURCE = 'projects/989788194604/locations/europe-west4/tensorboards/6949581990614007808'
 BQ_SOURCE = 'bq://argolis-rafaelsanchez-ml-dev.ml_datasets_europewest4.ulb_'
 
 # Initialize the *client* for Vertex

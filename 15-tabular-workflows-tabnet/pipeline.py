@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 import uuid
 
 from google.cloud import aiplatform, storage
-from google_cloud_pipeline_components.experimental.automl.tabular import \
+from google_cloud_pipeline_components.preview.automl.tabular import \
     utils as automl_tabular_utils
 
 
@@ -226,6 +226,3 @@ print(
     "model artifacts:",
     get_model_artifacts_path(tabnet_trainer_pipeline_task_details, "tabnet-trainer"),
 )
-
-
-

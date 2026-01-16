@@ -1,28 +1,26 @@
 import matplotlib.pyplot as plt
 import pandas as pd
-from tensorflow.python.keras import Sequential, layers
-from tensorflow.python.keras.utils import data_utils
+import numpy as np
+import urllib.request
+import os
+from sklearn.neural_network import MLPRegressor
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 def read_data(uri):
     """
-    Read data
-    Args:
-        uri: path to data
-    Returns:
-        pandas dataframe
+    Read data and process it for training.
     """
-    dataset_path = data_utils.get_file("auto-mpg.data", uri)
+    dataset_path = "auto-mpg.data"
+    if not os.path.exists(dataset_path):
+        urllib.request.urlretrieve(uri, dataset_path)
+        
     column_names = [
-        "MPG",
-        "Cylinders",
-        "Displacement",
-        "Horsepower",
-        "Weight",
-        "Acceleration",
-        "Model Year",
-        "Origin",
+        "MPG", "Cylinders", "Displacement", "Horsepower", 
+        "Weight", "Acceleration", "Model Year", "Origin"
     ]
-    raw_dataset = pd.read_csv(
+    
+    # Read the dataset
+    dataset = pd.read_csv(
         dataset_path,
         names=column_names,
         na_values="?",
@@ -30,26 +28,32 @@ def read_data(uri):
         sep=" ",
         skipinitialspace=True,
     )
-    dataset = raw_dataset.dropna()
+    
+    # Map Origin
     dataset["Origin"] = dataset["Origin"].map(
         lambda x: {1: "USA", 2: "Europe", 3: "Japan"}.get(x)
     )
-    dataset = pd.get_dummies(dataset, prefix="", prefix_sep="")
+    
+    # Drop any NaNs (including those from Horsepower '?' or failed mapping)
+    dataset = dataset.dropna()
+    
+    # Create dummy variables with explicit float dtype
+    dataset = pd.get_dummies(dataset, prefix="", prefix_sep="", dtype=float)
+    
+    # Ensure all columns are numeric
+    dataset = dataset.apply(pd.to_numeric, errors='coerce')
+    dataset = dataset.dropna()
+    
     return dataset
 
 
 def train_test_split(dataset, split_frac=0.8, random_state=0):
     """
-    Split data into train and test
-    Args:
-        dataset: pandas dataframe
-        split_frac: fraction of data to use for training
-        random_state: random seed
-    Returns:
-        train and test dataframes
+    Split data into train and test sets.
     """
     train_dataset = dataset.sample(frac=split_frac, random_state=random_state)
     test_dataset = dataset.drop(train_dataset.index)
+    
     train_labels = train_dataset.pop("MPG")
     test_labels = test_dataset.pop("MPG")
 
@@ -58,72 +62,74 @@ def train_test_split(dataset, split_frac=0.8, random_state=0):
 
 def normalize_dataset(train_dataset, test_dataset):
     """
-    Normalize data
-    Args:
-        train_dataset: pandas dataframe
-        test_dataset: pandas dataframe
-
-    Returns:
-
+    Normalize data using training set statistics.
     """
-    train_stats = train_dataset.describe()
-    train_stats = train_stats.transpose()
+    train_stats = train_dataset.describe().transpose()
 
     def norm(x):
-        return (x - train_stats["mean"]) / train_stats["std"]
+        # Prevent division by zero if std is 0 or NaN
+        std = train_stats["std"].fillna(1.0).replace(0, 1.0)
+        mean = train_stats["mean"].fillna(0)
+        return (x - mean) / std
 
-    normed_train_data = norm(train_dataset)
-    normed_test_data = norm(test_dataset)
+    normed_train_data = norm(train_dataset).fillna(0)
+    normed_test_data = norm(test_dataset).fillna(0)
 
     return normed_train_data, normed_test_data
 
 
 def build_model(num_units, dropout_rate):
     """
-    Build model
-    Args:
-        num_units: number of units in hidden layer
-        dropout_rate: dropout rate
-    Returns:
-        compiled model
+    Build Scikit-learn MLPRegressor.
     """
-    model = Sequential(
-        [
-            layers.Dense(
-                num_units,
-                activation="relu",
-                input_shape=[9],
-            ),
-            layers.Dropout(rate=dropout_rate),
-            layers.Dense(num_units, activation="relu"),
-            layers.Dense(1),
-        ]
+    # Note: Scikit-learn MLPRegressor doesn't have a direct dropout parameter.
+    # We use alpha for regularization which is a similar concept.
+    model = MLPRegressor(
+        hidden_layer_sizes=(num_units, num_units),
+        activation="relu",
+        solver="adam",
+        max_iter=1000,
+        random_state=42,
+        alpha=dropout_rate # Using dropout_rate as alpha for regularization
     )
-
-    model.compile(loss="mse", optimizer="adam", metrics=["mae", "mse"])
     return model
 
 
 def train(
-    model,
     train_data,
     train_labels,
-    validation_split=0.2,
+    num_units=16,
+    activation="relu",
     epochs=10,
+    dropout_rate=0.1,
 ):
     """
-    Train model
-    Args:
-        train_data: pandas dataframe
-        train_labels: pandas dataframe
-        model: compiled model
-        validation_split: fraction of data to use for validation
-        epochs: number of epochs to train for
-    Returns:
-        history
+    Train the model and return it with a Keras-like history object.
+    Matches the call signature in experiments-simple.py.
     """
-    history = model.fit(
-        train_data, train_labels, epochs=epochs, validation_split=validation_split
-    )
-
-    return history
+    model = build_model(num_units, dropout_rate)
+    
+    # Scikit-learn uses max_iter instead of epochs for iteration count
+    model.set_params(max_iter=epochs)
+    
+    # Ensure data is clean of NaNs
+    train_data = train_data.fillna(0)
+    train_labels = train_labels.fillna(0)
+    
+    model.fit(train_data, train_labels)
+    
+    # Calculate metrics for logging
+    train_preds = model.predict(train_data)
+    mae = mean_absolute_error(train_labels, train_preds)
+    mse = mean_squared_error(train_labels, train_preds)
+    
+    # Define a simple class to mimic Keras history
+    class History:
+        def __init__(self, mae, mse):
+            self.history = {
+                "mae": [mae],
+                "mse": [mse],
+                "loss": [mse]
+            }
+            
+    return model, History(mae, mse)

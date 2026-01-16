@@ -18,6 +18,7 @@ parameters = [
 ]
 
 # Read data
+# https://www.kaggle.com/datasets/yasserh/auto-mpg-dataset
 dataset = read_data(
     "http://archive.ics.uci.edu/ml/machine-learning-databases/auto-mpg/auto-mpg.data"
 )
@@ -29,7 +30,7 @@ train_dataset, test_dataset, train_labels, test_labels = train_test_split(datase
 normed_train_data, normed_test_data = normalize_dataset(train_dataset, test_dataset)
 
 for i, params in enumerate(parameters):
-    aiplatform.start_run(run=f"auto-mpg-local-run-{i}")
+    aiplatform.start_run(run=f"auto-mpg-local-run4-{i}")
     aiplatform.log_params(params)
     model, history = train(
         normed_train_data,
@@ -43,9 +44,18 @@ for i, params in enumerate(parameters):
         {metric: values[-1] for metric, values in history.history.items()}
     )
 
-    loss, mae, mse = model.evaluate(normed_test_data, test_labels, verbose=2)
-    aiplatform.log_metrics({"eval_loss": 23, "eval_mae": 23, "eval_mse": 23})
+    # Evaluate using Scikit-learn
+    from sklearn.metrics import mean_absolute_error, mean_squared_error
+    test_preds = model.predict(normed_test_data)
+    eval_mae = mean_absolute_error(test_labels, test_preds)
+    eval_mse = mean_squared_error(test_labels, test_preds)
+    
+    aiplatform.log_metrics({
+        "eval_loss": eval_mse, 
+        "eval_mae": eval_mae, 
+        "eval_mse": eval_mse
+    })
 
 # recovers dataframe
-experiment_df = aiplatform.get_experiment_df('rafa-experiment-test2')
+experiment_df = aiplatform.get_experiment_df(EXPERIMENT_NAME)
 print(experiment_df)

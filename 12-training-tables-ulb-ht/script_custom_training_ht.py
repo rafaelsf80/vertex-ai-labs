@@ -2,21 +2,18 @@ import argparse
 import logging
 import os
 
-from tensorflow_io.bigquery import BigQueryClient
-import tensorflow as tf
-import tensorflow_io
+from google.cloud import bigquery
+from google.cloud import storage
+import xgboost as xgb
 
+import tensorflow as tf
 from tensorboard.plugins.hparams import api as hp
 import hypertune
 
 logging.getLogger().setLevel(logging.INFO)
 
 TENSORBOARD_LOG_DIR = os.environ["AIP_TENSORBOARD_LOG_DIR"]
-TRAINING_DATA_URI = os.environ["AIP_TRAINING_DATA_URI"]
-VALIDATION_DATA_URI = os.environ["AIP_VALIDATION_DATA_URI"]
-TEST_DATA_URI = os.environ["AIP_TEST_DATA_URI"]
-DATA_FORMAT = os.environ["AIP_DATA_FORMAT"]
-BATCH_SIZE = 16
+BQ_SOURCE = 'bq://argolis-rafaelsanchez-ml-dev.ml_datasets_europewest4.ulb_'
 
 
 def get_args():
@@ -31,24 +28,13 @@ def get_args():
       help='The tfds URI from https://www.tensorflow.org/datasets/ to load the data from')
 
   parser.add_argument('--lr', type=float, default=0.01)
-  parser.add_argument('--units', type=int, default=4)
+  parser.add_argument('--depth', type=int, default=6)
   parser.add_argument('--activation', type=str, default='relu')
   parser.add_argument('--batch_size', type=int, default=128)
 
   args = parser.parse_args()
   return args
 
-class HPTCallback(tf.keras.callbacks.Callback):
-    
-    def __init__(self):
-        super().__init__()
-        self._hp_tune_reporter = hypertune.HyperTune()
-
-    def on_epoch_end(self, epoch, logs=None):
-        self._hp_tune_reporter.report_hyperparameter_tuning_metric(
-            hyperparameter_metric_tag='accuracy',
-            metric_value=logs['accuracy'],
-            global_step=epoch)
 
 # Training settings
 args = get_args()
@@ -64,89 +50,98 @@ FEATURES = ['Time', 'V1',  'V2',  'V3',  'V4',  'V5',  'V6',  'V7',  'V8',  'V9'
 
 TARGET = 'Class'
 
-def transform_row(row_dict):
+def read_bigquery(uri):
+    project, dataset, table = uri_to_fields(uri)
+    client = bigquery.Client(project=project)
+    # Using the bigquery storage client for faster downloads
+    query = f"SELECT {','.join(FEATURES + [TARGET])} FROM `{project}.{dataset}.{table}`"
+    logging.info(f"Reading data from {uri}...")
+    df = client.query(query).to_dataframe()
+    return df
 
-  features = dict(row_dict)
-  label = tf.cast(features.pop(TARGET), tf.float64)
-  return (features, label)
+# Load datasets
+logging.info("Loading training data...")
+df = read_bigquery(BQ_SOURCE)
+logging.info("Data loaded: {} rows".format(len(df)))
+train_df = df.sample(frac=0.8, random_state=42)
+test_df = df.drop(train_df.index).sample(frac=0.5, random_state=42)
+eval_df = df.drop(train_df.index).drop(test_df.index)
 
-def read_bigquery(project, dataset, table):
-  tensorflow_io_bigquery_client = BigQueryClient()
-  read_session = tensorflow_io_bigquery_client.read_session(
-      "projects/" + project,
-      project, table, dataset,
-      FEATURES + [TARGET],
-      [tf.int64] + [tf.float64] * (len(FEATURES)-1) + [tf.int64],
-      requested_streams=2)
+X_train, y_train = train_df[FEATURES], train_df[TARGET]
+X_eval, y_eval = eval_df[FEATURES], eval_df[TARGET]
+X_test, y_test = test_df[FEATURES], test_df[TARGET]
 
-  dataset = read_session.parallel_read_rows()
-  transformed_ds = dataset.map(transform_row)
-  return transformed_ds
+class TensorBoardCallback(xgb.callback.TrainingCallback):
+    def __init__(self, log_dir):
+        # Initialize the TensorFlow SummaryWriter
+        self.writer = tf.summary.create_file_writer(log_dir)
 
-logging.info(f'Using tensorflow {tf.__version__} and tensorflow_io {tensorflow_io.__version__}')
+    def after_iteration(self, model, epoch, evals_log):
+        """Called after each iteration to log metrics."""
+        with self.writer.as_default():
+            for data_name, metrics in evals_log.items():
+                for metric_name, log_values in metrics.items():
+                    # Log the most recent value (last in the list)
+                    tf.summary.scalar(f"{data_name}-{metric_name}", log_values[-1], step=epoch)
+        self.writer.flush()
+        return False  # Return True to stop training early
 
-training_ds = read_bigquery(*uri_to_fields(TRAINING_DATA_URI)).shuffle(10).batch(args.batch_size)
-eval_ds = read_bigquery(*uri_to_fields(VALIDATION_DATA_URI)).batch(args.batch_size)
-test_ds = read_bigquery(*uri_to_fields(TEST_DATA_URI)).batch(args.batch_size)
+class HPTCallback(xgb.callback.TrainingCallback):
+    def __init__(self, metric_tag='accuracy'):
+        super().__init__()
+        self._hp_tune_reporter = hypertune.HyperTune()
+        self.metric_tag = metric_tag
 
-logging.info(TRAINING_DATA_URI)
-logging.info("first batch")
-logging.info(next(iter(training_ds))) # Print first batch
+    def after_iteration(self, model, epoch, evals_log):
+        """Called after each iteration to report metrics for hyperparameter tuning."""
+        # evals_log format: {'train': {'accuracy': [...]}, 'eval': {'accuracy': [...]}}
+        # We report the 'eval' accuracy
+        if 'eval' in evals_log and self.metric_tag in evals_log['eval']:
+            metric_value = evals_log['eval'][self.metric_tag][-1]
+            self._hp_tune_reporter.report_hyperparameter_tuning_metric(
+                hyperparameter_metric_tag=self.metric_tag,
+                metric_value=metric_value,
+                global_step=epoch
+            )
+        return False
 
-def encode_numerical_feature(feature, name, dataset):
-  # Create a Normalization layer for the feature.
-  normalizer = tf.keras.layers.Normalization()
+# Convert to DMatrix (Native XGBoost format)
+dtrain = xgb.DMatrix(X_train.values, label=y_train.values)
+deval = xgb.DMatrix(X_eval.values, label=y_eval.values)
+dtest = xgb.DMatrix(X_test.values, label=y_test.values)
 
-  # Prepare a Dataset that only yields the feature.
-  feature_ds = dataset.map(lambda x, y: x[name])
-  feature_ds = feature_ds.map(lambda x: tf.expand_dims(x, -1))
-
-  # Learn the statistics of the data.
-  normalizer.adapt(feature_ds)
-
-  encoded_feature = normalizer(feature)
-  return encoded_feature
-
-strategy = tf.distribute.MirroredStrategy()    
-with strategy.scope():
-  all_inputs = []
-  encoded_features = []
-
-  # Numerical features.
-  for header in FEATURES:
-    numeric_col = tf.keras.Input(shape=(1,), name=header)
-    all_inputs.append(numeric_col)
-    logging.info(header)
-
-    encoded_numeric_col = encode_numerical_feature(numeric_col, header, training_ds)
-    encoded_features.append(encoded_numeric_col)
-
-
-  all_features = tf.keras.layers.concatenate(encoded_features)
-  x = tf.keras.layers.Dense(64, activation=args.activation)(all_features)
-  x = tf.keras.layers.Dropout(0.5)(x)
-  output = tf.keras.layers.Dense(1, activation="sigmoid")(x)
-
-  model = tf.keras.Model(all_inputs, output)
-
-  model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=args.lr),
-                loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-                metrics=['accuracy', tf.keras.metrics.AUC(curve='PR')])
-
-CLASS_WEIGHT = {
-    0: 1,
-    1: 100
+# Move parameters to a dictionary for the native API
+params = {
+    'objective': 'binary:logistic',
+    'scale_pos_weight': 100,
+    'max_depth': args.depth,
+    'learning_rate': args.lr,
+    'eval_metric': 'error' # accuracy in xgb is 1-error, using 'error' is common for binary
 }
-EPOCHS = 3
 
-tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_LOG_DIR, histogram_freq=1, profile_batch = '50,100')
-vertex_hpt_callback = HPTCallback() # log to Vertex UI (hypertune)
+logging.info("Starting training...")
+log_dir = TENSORBOARD_LOG_DIR
+tb_callback = TensorBoardCallback(log_dir)
+# 'accuracy' is typically 1-error in binary:logistic if not explicitly added
+vertex_hpt_callback = HPTCallback(metric_tag='error') 
 
-model.fit(training_ds, epochs=EPOCHS, class_weight=CLASS_WEIGHT, validation_data=eval_ds, callbacks = [vertex_hpt_callback, tensorboard_callback])
+# Use the native xgb.train instead of model.fit to ensure callback compatibility
+model = xgb.train(
+    params,
+    dtrain,
+    num_boost_round=100,
+    evals=[(dtrain, 'train'), (deval, 'eval')],
+    callbacks=[tb_callback, vertex_hpt_callback],
+    verbose_eval=True
+)
 
-logging.info(model.evaluate(test_ds))
+logging.info("Starting evaluation...")
+# For the native API, we use predict and calculate the accuracy manually
+preds = model.predict(dtest)
+predictions = [1 if p > 0.5 else 0 for p in preds]
+accuracy = sum(1 for i, j in zip(predictions, y_test.values) if i == j) / len(y_test)
+logging.info(f"Test Accuracy: {accuracy}")
 
-tf.saved_model.save(model, os.environ["AIP_MODEL_DIR"])
-
-
-
+# Save model locally
+local_model_path = 'model.bst'
+model.save_model(local_model_path)

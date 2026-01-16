@@ -67,6 +67,8 @@ def main(args):
         callbacks=[tensorboard_callback],
     )
 
+    tf.saved_model.save(model, os.environ["AIP_MODEL_DIR"])
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

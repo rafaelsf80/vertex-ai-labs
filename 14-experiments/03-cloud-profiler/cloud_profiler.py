@@ -1,0 +1,38 @@
+# Cloud profiler demo, with script located at 'script_cloud_profiler.py'
+# TODO: investigate why nothing appears on tensorboard
+
+from google.cloud import aiplatform
+
+BUCKET = 'gs://argolis-vertex-europewest4'
+PROJECT_ID = 'argolis-rafaelsanchez-ml-dev'
+LOCATION = 'europe-west4'
+SERVICE_ACCOUNT = 'tensorboard-sa@argolis-rafaelsanchez-ml-dev.iam.gserviceaccount.com'
+TENSORBOARD_RESOURCE = 'projects/989788194604/locations/europe-west4/tensorboards/6949581990614007808'
+
+# Initialize the *client* for Vertex
+aiplatform.init(project=PROJECT_ID, staging_bucket=BUCKET, location=LOCATION)
+
+# Launch Training pipeline, a type of Vertex Training Job.
+# A Training pipeline integrates three steps into one job: Accessing a Managed Dataset (not used here), Training, and Model Upload. 
+job = aiplatform.CustomTrainingJob(
+    display_name="cloud_profiler_simple",
+    script_path="script_cloud_profiler.py",
+    container_uri="europe-docker.pkg.dev/vertex-ai/training/tf-cpu.2-7:latest",
+    requirements=['google-cloud-aiplatform'],
+    model_serving_container_image_uri="europe-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-7:latest",
+)
+
+EPOCHS = 20
+training_args = [
+    "--epochs=" + str(EPOCHS),
+]
+
+model = job.run(
+    model_display_name='cloud_profiler_simple',
+    replica_count=1,
+    service_account = SERVICE_ACCOUNT,
+    tensorboard = TENSORBOARD_RESOURCE,
+    bigquery_destination=f'bq://{PROJECT_ID}',   # must provide a destination as Dataset source is BQ
+    args=training_args,
+)
+print(model)

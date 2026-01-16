@@ -1,20 +1,22 @@
+""" Batch prediction job for the ULB dataset """
+
 from google.cloud import aiplatform
 import logging
 
-SOURCE_FILE_URI= 'gs://argolis-vertex-europewest4/batch_ulb_gcs_source_33.jsonl'
+SOURCE_FILE_URI = 'gs://argolis-vertex-europewest4/batch_ulb_gcs_1.jsonl'  # <---- CHANGE THIS
 
-STAGING_BUCKET = 'gs://argolis-vertex-europewest4'
-PROJECT_ID = 'argolis-rafaelsanchez-ml-dev'
-LOCATION = 'europe-west4'
+STAGING_BUCKET  = 'gs://argolis-vertex-europewest4' # <---- CHANGE THIS
+PROJECT_ID      = 'argolis-rafaelsanchez-ml-dev'    # <---- CHANGE THIS
+LOCATION        = 'europe-west4'                    # <---- CHANGE THIS
 
 aiplatform.init(project=PROJECT_ID, staging_bucket=STAGING_BUCKET, location=LOCATION)
 
-model = aiplatform.Model('projects/argolis-rafaelsanchez-ml-dev/locations/europe-west4/models/5568228149243674624') # <--- CHANGE THIS
+model = aiplatform.Model('projects/989788194604/locations/europe-west4/models/8295894396407119872')   # <---- CHANGE THIS
 # destination in GCS: prediction-<model-display-name>-<job-create-time>, where
 # timestamp is in YYYY-MM-DDThh:mm:ss.sssZ ISO-8601 format.
 # Inside of it files of type predictions_0001.<extension>
 batch_prediction_job = model.batch_predict(
-    job_display_name='ulb-batch-names-33',
+    job_display_name='ulb-batch_1',
     gcs_source=SOURCE_FILE_URI, 
     instances_format='jsonl',
     gcs_destination_prefix=STAGING_BUCKET,

@@ -1,20 +1,23 @@
 import logging
 import os
-
-from tensorflow_io.bigquery import BigQueryClient
+import pandas as pd
+import xgboost as xgb
+from google.cloud import bigquery
+from google.cloud import storage
 import tensorflow as tf
-import tensorflow_io
 
 logging.getLogger().setLevel(logging.INFO)
 
+# OPTIONAL: if you created a Managed Dataset
+# TRAINING_DATA_URI = os.environ["AIP_TRAINING_DATA_URI"]
+# VALIDATION_DATA_URI = os.environ["AIP_VALIDATION_DATA_URI"]
+# TEST_DATA_URI = os.environ["AIP_TEST_DATA_URI"]
 TENSORBOARD_LOG_DIR = os.environ["AIP_TENSORBOARD_LOG_DIR"]
-TRAINING_DATA_URI = os.environ["AIP_TRAINING_DATA_URI"]
-VALIDATION_DATA_URI = os.environ["AIP_VALIDATION_DATA_URI"]
-TEST_DATA_URI = os.environ["AIP_TEST_DATA_URI"]
-DATA_FORMAT = os.environ["AIP_DATA_FORMAT"]
-BATCH_SIZE = 16
+DATA_URI=os.environ["bq_dataset"]
+MODEL_DIR = os.environ["AIP_MODEL_DIR"]
 
 def uri_to_fields(uri):
+    # Expect bq://project.dataset.table
     uri = uri[5:]
     project, dataset, table = uri.split('.')
     return project, dataset, table
@@ -22,87 +25,112 @@ def uri_to_fields(uri):
 FEATURES = ['Time', 'V1',  'V2',  'V3',  'V4',  'V5',  'V6',  'V7',  'V8',  'V9',
                   'V10', 'V11', 'V12', 'V13', 'V14', 'V15', 'V16', 'V17', 'V18', 'V19',
                   'V20', 'V21', 'V22', 'V23', 'V24', 'V25', 'V26', 'V27', 'V28', 'Amount']
-
 TARGET = 'Class'
 
-def transform_row(row_dict):
+def read_bigquery(uri):
+    project, dataset, table = uri_to_fields(uri)
+    client = bigquery.Client(project=project)
+    # Using the bigquery storage client for faster downloads
+    query = f"SELECT {','.join(FEATURES + [TARGET])} FROM `{project}.{dataset}.{table}`"
+    logging.info(f"Reading data from {uri}...")
+    df = client.query(query).to_dataframe()
+    return df
 
-  features = dict(row_dict)
-  label = tf.cast(features.pop(TARGET), tf.float64)
-  return (features, label)
-
-def read_bigquery(project, dataset, table):
-  tensorflow_io_bigquery_client = BigQueryClient()
-  read_session = tensorflow_io_bigquery_client.read_session(
-      "projects/" + project,
-      project, table, dataset,
-      FEATURES + [TARGET],
-      [tf.int64] + [tf.float64] * (len(FEATURES)-1) + [tf.int64],
-      requested_streams=2)
-
-  dataset = read_session.parallel_read_rows()
-  transformed_ds = dataset.map(transform_row)
-  return transformed_ds
-
-logging.info(f'Using tensorflow {tf.__version__} and tensorflow_io {tensorflow_io.__version__}')
-
-training_ds = read_bigquery(*uri_to_fields(TRAINING_DATA_URI)).shuffle(10).batch(BATCH_SIZE)
-eval_ds = read_bigquery(*uri_to_fields(VALIDATION_DATA_URI)).batch(BATCH_SIZE)
-test_ds = read_bigquery(*uri_to_fields(TEST_DATA_URI)).batch(BATCH_SIZE)
-
-logging.info(TRAINING_DATA_URI)
-logging.info("first batch")
-logging.info(next(iter(training_ds))) # Print first batch
-
-def encode_numerical_feature(feature, name, dataset):
-  # Create a Normalization layer for the feature.
-  normalizer = tf.keras.layers.Normalization()
-
-  # Prepare a Dataset that only yields the feature.
-  feature_ds = dataset.map(lambda x, y: x[name])
-  feature_ds = feature_ds.map(lambda x: tf.expand_dims(x, -1))
-
-  # Learn the statistics of the data.
-  normalizer.adapt(feature_ds)
-
-  encoded_feature = normalizer(feature)
-  return encoded_feature
+# Load datasets
+logging.info("Loading training data...")
+df = read_bigquery(DATA_URI)
+logging.info("Data loaded: {} rows".format(len(df)))
+train_df = df.sample(frac=0.8, random_state=42)
+test_df = df.drop(train_df.index).sample(frac=0.5, random_state=42)
+eval_df = df.drop(train_df.index).drop(test_df.index)
 
 
-all_inputs = []
-encoded_features = []
+# OPTIONAL: if you created a Managed dataset
+# logging.info("Loading training data...")
+# train_df = read_bigquery(TRAINING_DATA_URI)
+# logging.info("Loading validation data...")
+# eval_df = read_bigquery(VALIDATION_DATA_URI)
+# logging.info("Loading test data...")
+# test_df = read_bigquery(TEST_DATA_URI)
 
-# Numerical features.
-for header in FEATURES:
-  numeric_col = tf.keras.Input(shape=(1,), name=header)
-  all_inputs.append(numeric_col)
-  logging.info(header)
+X_train, y_train = train_df[FEATURES], train_df[TARGET]
+X_eval, y_eval = eval_df[FEATURES], eval_df[TARGET]
+X_test, y_test = test_df[FEATURES], test_df[TARGET]
 
-  encoded_numeric_col = encode_numerical_feature(numeric_col, header, training_ds)
-  encoded_features.append(encoded_numeric_col)
+class TensorBoardCallback(xgb.callback.TrainingCallback):
+    def __init__(self, log_dir):
+        # Initialize the TensorFlow SummaryWriter
+        self.writer = tf.summary.create_file_writer(log_dir)
 
+    def after_iteration(self, model, epoch, evals_log):
+        """Called after each iteration to log metrics."""
+        with self.writer.as_default():
+            for data_name, metrics in evals_log.items():
+                for metric_name, log_values in metrics.items():
+                    # Log the most recent value (last in the list)
+                    tf.summary.scalar(f"{data_name}-{metric_name}", log_values[-1], step=epoch)
+        self.writer.flush()
+        return False  # Return True to stop training early
 
-all_features = tf.keras.layers.concatenate(encoded_features)
-x = tf.keras.layers.Dense(64, activation="relu")(all_features)
-x = tf.keras.layers.Dropout(0.5)(x)
-output = tf.keras.layers.Dense(1, activation="sigmoid")(x)
+# Convert to DMatrix (Native XGBoost format)
+dtrain = xgb.DMatrix(X_train.values, label=y_train.values)
+deval = xgb.DMatrix(X_eval.values, label=y_eval.values)
+dtest = xgb.DMatrix(X_test.values, label=y_test.values)
 
-model = tf.keras.Model(all_inputs, output)
-
-model.compile(optimizer='adam',
-              loss=tf.keras.losses.BinaryCrossentropy(from_logits=True),
-              metrics=['accuracy', tf.keras.metrics.AUC(curve='PR')])
-
-CLASS_WEIGHT = {
-    0: 1,
-    1: 100
+# Move parameters to a dictionary for the native API
+params = {
+    'objective': 'binary:logistic',
+    'scale_pos_weight': 100,
+    'max_depth': 6,
+    'learning_rate': 0.1,
+    'eval_metric': 'aucpr' # accuracy
 }
-EPOCHS = 3
 
-tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=TENSORBOARD_LOG_DIR, histogram_freq=1, profile_batch = '50,100')
+logging.info("Starting training...")
+log_dir = TENSORBOARD_LOG_DIR
+tb_callback = TensorBoardCallback(log_dir)
 
-model.fit(training_ds, epochs=EPOCHS, class_weight=CLASS_WEIGHT, validation_data=eval_ds, callbacks = [tensorboard_callback])
+# Use the native xgb.train instead of model.fit to ensure callback compatibility
+model = xgb.train(
+    params,
+    dtrain,
+    num_boost_round=100,
+    evals=[(dtrain, 'train'), (deval, 'eval')],
+    callbacks=[tb_callback],
+    verbose_eval=True
+)
 
-logging.info(model.evaluate(test_ds))
+logging.info("Starting evaluation...")
+# For the native API, we use predict and calculate the accuracy manually
+preds = model.predict(dtest)
+predictions = [1 if p > 0.5 else 0 for p in preds]
+accuracy = sum(1 for i, j in zip(predictions, y_test.values) if i == j) / len(y_test)
+logging.info(f"Test Accuracy: {accuracy}")
 
-tf.saved_model.save(model, os.environ["AIP_MODEL_DIR"])
+# Save model locally first
+local_model_path = 'model.bst'
+model.save_model(local_model_path)
+
+# Upload to GCS if MODEL_DIR is a gs:// path
+if MODEL_DIR.startswith("gs://"):
+    logging.info(f"Uploading model to {MODEL_DIR}...")
+    # Extract bucket and path
+    path_parts = MODEL_DIR.replace("gs://", "").split('/')
+    bucket_name = path_parts[0]
+    blob_path = '/'.join(path_parts[1:]).rstrip('/')
+    
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    # Vertex AI prediction expects the model file name to be specific (model.bst, model.joblib, or model.pkl)
+    # We should upload it directly into the MODEL_DIR path
+    blob = bucket.blob(f"{blob_path}/model.bst")
+    blob.upload_from_filename(local_model_path)
+    logging.info(f"Model successfully uploaded to {MODEL_DIR}/model.bst")
+else:
+    # Handle local directory case
+    if not os.path.exists(MODEL_DIR):
+        os.makedirs(MODEL_DIR)
+    model.save_model(os.path.join(MODEL_DIR, 'model.bst'))
+    logging.info(f"Model saved locally to {os.path.join(MODEL_DIR, 'model.bst')}")
+
+logging.info("Training script execution complete.")
