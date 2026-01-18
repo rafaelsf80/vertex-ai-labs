@@ -219,22 +219,22 @@ Notes:
 * TensorFlow and Tensorflow I/O versions must be compatible in your environment. This is guaranteed if you use Vertex AI Workbench. Check version compatibility [here](https://github.com/tensorflow/io#tensorflow-version-compatibility).
 
 
-## Lab 13: Vertex custom training (Iris dataset) with custom containers
+## Lab 13: Vertex distributed custom training (Iris dataset and Dask) with custom containers
 
-Simple Vertex custom training job, using TensorFlow **custom containers** (for training) and the [tabular iris dataset](https://archive.ics.uci.edu/ml/datasets/iris). This lab uses GPUs.
+Vertex distriuted custom training job over 2xCPU, using XGBoost **custom containers** (for training), the [Dask framework](https://xgboost.readthedocs.io/en/latest/tutorials/dask.html) and the [tabular iris dataset](https://archive.ics.uci.edu/ml/datasets/iris). This lab uses two CPUs.
 
 Setup:
-1. Copy the public table `bigquery-public-data.ml_datasets.iris` into your project and region. Easiest way for this table size is to export as CSV to GCS and then upload it into BigQuery with schema autodetect.
+1. The dataset is downloaded from a bucket in Google Cloud `gs://cloud-samples-data/ai-platform/iris/iris_data.csv`. Alternatively, you can copy the public table `bigquery-public-data.ml_datasets.iris` into your project and region. Easiest way for this table size is to export as CSV to GCS and then upload it into BigQuery with schema autodetect.
 2. Create the repository and submit the custom container to **Artifact Registry**:
 ```sh
 gcloud artifacts repositories create ml-pipelines-repo --repository-format=docker --location=europe-west4 --description="ML pipelines repository"
 gcloud auth configure-docker europe-west4-docker.pkg.dev
-gcloud builds submit --tag europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/vertex-iris-demo
+gcloud builds submit --tag europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/13-training-tables-xgboost-noprebuilt
 ```
 
 Instructions:
 ```sh
-python3 13-training-tables-iris/mbsdk_all.py
+python3 13-training-tables-iris/custom_training.py
 ```
 
 For more information about custom training in Vertex, visit the [official documentation](https://cloud.google.com/vertex-ai/docs/training/custom-training) and [this github repo](https://github.com/rafaelsf80/vertex-custom-training)
