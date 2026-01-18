@@ -25,6 +25,10 @@ def _create_model():
 
 
 def main(args):
+    
+    # Initialize the profiler.
+    cloud_profiler.init()
+
     strategy = None
     if args.distributed:
         strategy = tf.distribute.MultiWorkerMirroredStrategy()
@@ -51,12 +55,12 @@ def main(args):
             metrics=["accuracy"],
         )
 
-    # Initialize the profiler.
-    cloud_profiler.init()
 
-    # Use AIP_TENSORBOARD_LOG_DIR to update where logs are written to.
+
     tensorboard_callback = tf.keras.callbacks.TensorBoard(
-        log_dir=os.environ["AIP_TENSORBOARD_LOG_DIR"], histogram_freq=1
+        log_dir=os.environ["AIP_TENSORBOARD_LOG_DIR"], 
+        histogram_freq=1,
+        profile_batch='100, 120'
     )
 
     model.fit(
@@ -67,7 +71,16 @@ def main(args):
         callbacks=[tensorboard_callback],
     )
 
-    tf.saved_model.save(model, os.environ["AIP_MODEL_DIR"])
+    model_dir = "model"
+    if 'AIP_MODEL_DIR' in os.environ:
+      model_dir = os.environ['AIP_MODEL_DIR']
+    tf.saved_model.save(model, model_dir)
+
+    print('Model saved at ' + model_dir)
+    
+    # Wait a bit to ensure all logs and profiles are uploaded
+    print("Waiting for logs to flush...")
+    time.sleep(30)
 
 
 if __name__ == "__main__":

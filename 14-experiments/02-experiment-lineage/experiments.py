@@ -17,7 +17,7 @@ from helpers import preprocess, get_pipeline, train_pipeline, evaluate_model, ge
 PROJECT_ID = 'argolis-rafaelsanchez-ml-dev'
 REGION = 'europe-west4'
 EXPERIMENT_NAME = 'exp-lineage'
-EXPERIMENT_RUN_NAME = 'run-8'
+EXPERIMENT_RUN_NAME = 'run-12'
 
 TARGET = "category"
 TARGET_LABELS = ["b", "t", "e", "m"]
@@ -54,13 +54,11 @@ raw_dataset_artifact = vertex_ai.Artifact.create(
 )
 
 
-##### PART 1: PREPROCESSING
-
+# We will store the preprocessed dataset as an artifact, different from the raw dataset
 PREPROCESSED_DATASET_NAME = f"preprocessed_{DATASET_NAME}"
 PREPROCESSED_DATASET_URI = (
     f"gs://argolis-rafaelsanchez-ml-dev/experiments/preprocess/{PREPROCESSED_DATASET_NAME}.csv"
 )
-
 
 with vertex_ai.start_execution(
     schema_title="system.ContainerExecution", display_name=PREPROCESS_EXECUTION_NAME
@@ -89,7 +87,7 @@ with vertex_ai.start_execution(
     preprocessed_df = preprocess(raw_df, "title")
     preprocessed_df.to_csv(PREPROCESSED_DATASET_URI, sep=",")
 
-    # Log preprocessing metrics and store dataset artifact ---------------------
+    # Log preprocessing metrics
     logging.info(f"Log preprocessing metrics and {PREPROCESSED_DATASET_NAME} dataset.")
     vertex_ai.log_metrics(
         {
@@ -97,7 +95,7 @@ with vertex_ai.start_execution(
             "n_columns": preprocessed_df.shape[1],
         },
     )
-
+    # Store preprocessed dataset artifact 
     preprocessed_dataset_metadata = vertex_ai.Artifact.create(
         schema_title="system.Dataset",
         display_name=PREPROCESSED_DATASET_NAME,
@@ -106,10 +104,7 @@ with vertex_ai.start_execution(
     exc.assign_output_artifacts([preprocessed_dataset_metadata])
 
 
-
-
-##### PART 2: TRAINING
-
+# Run training
 TRAINED_MODEL_URI = f"gs://argolis-rafaelsanchez-ml-dev/experiments/deliverables/models"
 MODEL_NAME =f"{EXPERIMENT_NAME}-model"
 
@@ -135,8 +130,6 @@ with vertex_ai.start_execution(
     logging.info("Get model pipeline.")
     pipeline = get_pipeline()
 
-    # Log training param -------------------------------------------------------
-
     # Log data parameters
     logging.info("Log data parameters.")
     vertex_ai.log_params(
@@ -158,8 +151,6 @@ with vertex_ai.start_execution(
         }
     )
 
-    # Training -----------------------------------------------------------------
-
     # Train model pipeline
     logging.info("Train model pipeline.")
     train_start = time.time()
@@ -171,8 +162,6 @@ with vertex_ai.start_execution(
     summary_metrics, classification_metrics = evaluate_model(
         trained_pipeline, x_val, y_val
     )
-
-    # Log training metrics and store model artifact ----------------------------
 
     # Log training metrics
     logging.info("Log training metrics.")

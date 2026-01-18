@@ -15,20 +15,20 @@ aiplatform.init(project=MY_PROJECT, staging_bucket=MY_STAGING_BUCKET, location=L
 job = aiplatform.CustomTrainingJob(
     display_name=f"explainable-ai-custom-tabular-nb-{uuid.uuid4()}",
     script_path="training_script.py",
-    container_uri="europe-docker.pkg.dev/vertex-ai/training/tf-gpu.2-6:latest",
+    container_uri="europe-docker.pkg.dev/vertex-ai/training/tf-cpu.2-6:latest",
     requirements=[
         "tensorflow_datasets",
         "explainable-ai-sdk",
     ],
-    model_serving_container_image_uri="europe-docker.pkg.dev/vertex-ai/prediction/tf2-gpu.2-6:latest",
+    model_serving_container_image_uri="europe-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-6:latest",
 )
 
 model = job.run(
     model_display_name="mbsdk-explainable-tabular-model",
     replica_count=1,
     machine_type="n1-standard-4",
-    accelerator_type="NVIDIA_TESLA_T4",
-    accelerator_count=1,
+    #accelerator_type="NVIDIA_TESLA_T4",
+    #accelerator_count=1,
     args=["--epochs=50", "--distribute=single"],
 )
 
@@ -101,8 +101,8 @@ explain_metadata = aiplatform.explain.ExplanationMetadata(
 # Deploy the model with model explanations enabled
 endpoint = model.deploy(
     machine_type="n1-standard-4",
-    accelerator_type="NVIDIA_TESLA_T4",
-    accelerator_count=1,
+    #accelerator_type="NVIDIA_TESLA_T4",
+    #accelerator_count=1,
     explanation_metadata=explain_metadata,
     explanation_parameters=explain_params,
 )

@@ -91,7 +91,7 @@ pip3 install -U keras==2.6.0
 
 ## Lab 06: Cloud Pub/Sub to trigger a pipeline based on Vertex monitoring alerts
 
-Lab 6 uses Cloud Scheduler and Pub/Sub to trigger a Cloud Function, which retrains a pipeline. The pipeline is called only if there are **active alerts** in the Vertex Model Monitoring service.
+Lab 06 uses Cloud Scheduler and Pub/Sub to trigger a Cloud Function, which retrains a pipeline. The pipeline is called only if there are **active alerts** in the Vertex Model Monitoring service.
 
 Setup: 
 1. First, you need to train a model for the first time (churn model) running the `retraining.py` pipeline. Note `endpoint` parameter empty. The same retraining pipeline will be launched later from the Cloud Function.
@@ -240,21 +240,22 @@ python3 13-training-tables-iris/mbsdk_all.py
 For more information about custom training in Vertex, visit the [official documentation](https://cloud.google.com/vertex-ai/docs/training/custom-training) and [this github repo](https://github.com/rafaelsf80/vertex-custom-training)
 
 
-## Lab 14: experiments and metrics visualization
+## Lab 14: Experiments and metrics visualization
 
 Vertex AI provides tools for experiment tracking and metrics visualization:
-1. Vertex AI experiments
-2. Managed Tensorboard
-3. Model evaluation
 
-Vertex AI experiments
+1. **Vertex AI experiments**: logs different parameters.
 
-This lab shows how to track training hyperparameters with Vertex experiments.
+2. **Lineage tracking**: shows tracking of a model with the raw dataset and the preprocessed dataset.
+
+3. **Cloud profiler**: implements a cloud profiler on Tensorboard to measure CPU/GPU metrics and others. Make sure the ervice account must have the following permissions: Storage Admin (to write logs to GCS); Vertex AI User; Cloud Profiler Agent (otherwise tensorboard will be empty)
+
+<img src="14-experiments/experiments_lineage.png" alt="Lab 14-02 Experiments lineage" width="500"/>
 
 
 ## Lab 15: TabNet with Tabular workflows
 
-This lab creates a classsification model based on TabNet, using the ULB finantial dataset, and Vertex AI Tabular Workflows. 
+This lab creates a classsification model based on [TabNet](https://arxiv.org/abs/1908.07442), using the ULB finantial dataset, and Vertex AI Tabular Workflows. 
 
 [TabNet](https://arxiv.org/abs/1908.07442) uses [sequential attention](https://proceedings.neurips.cc/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf) to choose which features to reason from at each decision step. This promotes interpretability and more efficient learning because the learning capacity is used for the most salient features.
 
@@ -267,7 +268,6 @@ Configurable hyperparameters in this example are the following (note TabNet allo
 |max_steps|
 |max_train_secs|
 |learning_rate|
-
 
 
 ## Lab 20: Simple online and batch prediction
@@ -457,7 +457,7 @@ lstat                0.0436186          -0.252064
 
 In case you would like to test a finantial dataset, [this codelab](https://codelabs.developers.google.com/vertex-automl-tabular) shows a model **trained with AutoML** (not a custom model) and deployed in a Vertex Endpoint.
 
-Feature importance and confussion matrix are available in the **Evaluate section** of the Vertex AI console. Note that since features are normalized, explainability results are not very significtive.
+Feature importance and confussion matrix are available in the **Evaluate section** of the Vertex AI console. Note that if features werr normalized, explainability results may not be very significtive.
 
 
 ## Lab 22: Model monitor with Games dataset (tabular)
@@ -476,7 +476,7 @@ Python scripts needed to run a monitoring job and trigger alerts (run in this or
 2. `monitor-create.py`: creates Model monitoring job. Note the input BigQuery table `DATASET_BQ_URI` must be in the same region. Otherwise, you need to create a copy of `bq://mco-mm.bqmlga4.train` in your region.
 3. `monitor-trigger.py`: trigger alerts in the Model monitoring job (it may take up to 1 hour).
 
-<img src="5-xai-and-monitor/alerts.png" alt="Alerts from Vertex AI Model monitoring" width="500"/>
+<img src="22-xai-and-monitor/alerts.png" alt="Alerts from Vertex AI Model monitoring" width="500"/>
 
 
 ## Lab 23: LIT with Kaggle happyDB dataset (NLP)
@@ -529,7 +529,7 @@ widget = notebook.LitWidget(models, datasets, height=800)
 widget.render()
 ```
 
-<img src="2-lit/lit_notebook.png" alt="LIT within a notebook" width="500"/>
+<img src="23-lit/lit_notebook.png" alt="LIT within a notebook" width="500"/>
 
 
 
@@ -600,7 +600,7 @@ Exploration ideas:
    * On the left side "Slice by" menu, select "loan_purpose_Home purchase". You'll now see performance on the two subsets of your data: the "0" slice shows when the loan is not for a home purchase, and the "1" slice is for when the loan is for a home purchase. Notice that the model's false positive rate is much higher on loans for home purchases. If you expand the rows to look at the confusion matrices, you can see that the model predicts "approved" more often for home purchase loans.
    * You can use the optimization buttons on the left side to have the tool auto-select different positive classification thresholds for each slice in order to achieve different goals. If you select the "Demographic parity" button, then the two thresholds will be adjusted so that the model predicts "approved" for a similar percentage of applicants in both slices. What does this do to the accuracy, false positives and false negatives for each slice?
 
-<img src="3-wit/wit_mortgages.png" alt="WIT mortgages" width="300"/>
+<img src="archive/wit/wit_mortgages.png" alt="WIT mortgages" width="300"/>
 
 
 Another basic example with the `WitWidget` is the following (must be rendered in a notebook):
@@ -611,8 +611,7 @@ examples = [{'test': 'hi'}, {'test': 'bye'}]
 config_builder = WitConfigBuilder(examples)
 WitWidget(config_builder, height=800)
 ```
-<img src="3-wit/wit_basic.png" alt="Basic WIT" width="200"/>
-
+<img src="archive/wit/wit_basic.png" alt="Basic WIT" width="200"/>
 
 
 
@@ -628,12 +627,12 @@ WitWidget(config_builder, height=800)
 
 ## References XAI and Monitoring
 
-[1] Notebook sample about Model monitoring: https://github.com/GoogleCloudPlatform/vertex-ai-samples/tree/master/notebooks/official/model_monitoring   
-[2] Notebook sample about Explainable AI: https://github.com/GoogleCloudPlatform/vertex-ai-samples/tree/master/notebooks/official/explainable_ai     
-[3] Google Cloud blog post: [Monitor models for training-serving skew with Vertex AI](https://cloud.google.com/blog/topics/developers-practitioners/monitor-models-training-serving-skew-vertex-ai)    
-[4] Google Cloud blog post: [Why you need to explain machine learning models](https://cloud.google.com/blog/products/ai-machine-learning/why-you-need-to-explain-machine-learning-models)    
-[5] Responsible AI practices: https://ai.google/responsibilities/responsible-ai-practices/    
-[6] Explainable AI whitepaper: https://storage.googleapis.com/cloud-ai-whitepapers/AI%20Explainability%20Whitepaper.pdf    
-[7] What-if Tool (WIT): https://pair-code.github.io/what-if-tool/   
-[8] Language Interpretability Tool (LIT): https://pair-code.github.io/lit/    
-[9] Google Cloud blog post: [Explaining machine learning models to business users using BigQueryML and Looker](https://cloud.google.com/blog/products/data-analytics/explainable-ai-using-bigquery-machine-learning-and-looker)        
+`[1]` Notebook sample about Model monitoring: https://github.com/GoogleCloudPlatform/vertex-ai-samples/tree/master/notebooks/official/model_monitoring   
+`[2]` Notebook sample about Explainable AI: https://github.com/GoogleCloudPlatform/vertex-ai-samples/tree/master/notebooks/official/explainable_ai     
+`[3]` Google Cloud blog post: [Monitor models for training-serving skew with Vertex AI](https://cloud.google.com/blog/topics/developers-practitioners/monitor-models-training-serving-skew-vertex-ai)    
+`[4]` Google Cloud blog post: [Why you need to explain machine learning models](https://cloud.google.com/blog/products/ai-machine-learning/why-you-need-to-explain-machine-learning-models)    
+`[5]` Responsible AI practices: https://ai.google/responsibilities/responsible-ai-practices/    
+`[6]` Explainable AI whitepaper: https://storage.googleapis.com/cloud-ai-whitepapers/AI%20Explainability%20Whitepaper.pdf    
+`[7]` What-if Tool (WIT): https://pair-code.github.io/what-if-tool/   
+`[8]` Language Interpretability Tool (LIT): https://pair-code.github.io/lit/    
+`[9]` Google Cloud blog post: [Explaining machine learning models to business users using BigQueryML and Looker](https://cloud.google.com/blog/products/data-analytics/explainable-ai-using-bigquery-machine-learning-and-looker)        

@@ -1,5 +1,10 @@
 # Cloud profiler demo, with script located at 'script_cloud_profiler.py'
-# TODO: investigate why nothing appears on tensorboard
+# !pip install google-cloud-aiplatform[cloud-profiler] protobuf==3.20.3
+# Service account must have the following permissions:
+#  1. Storage Admin (to write logs to GCS)
+#  2. Vertex AI User
+#  3. Cloud Profiler Agent (otherwise tensorboard will be empty)
+# Note: if Profile tab shows waiting, it may be bcause it's a toy dataset and data is not batched.
 
 from google.cloud import aiplatform
 
@@ -17,10 +22,11 @@ aiplatform.init(project=PROJECT_ID, staging_bucket=BUCKET, location=LOCATION)
 job = aiplatform.CustomTrainingJob(
     display_name="cloud_profiler_simple",
     script_path="script_cloud_profiler.py",
-    container_uri="europe-docker.pkg.dev/vertex-ai/training/tf-cpu.2-7:latest",
-    requirements=['google-cloud-aiplatform'],
-    model_serving_container_image_uri="europe-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-7:latest",
+    container_uri="europe-docker.pkg.dev/vertex-ai/training/tf-cpu.2-16.py310:latest",
+    requirements=['google-cloud-aiplatform[cloud-profiler]', 'protobuf==3.20.3'],
+    model_serving_container_image_uri="europe-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-16.py310:latest",
 )
+
 
 EPOCHS = 20
 training_args = [
