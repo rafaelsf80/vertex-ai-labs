@@ -1,8 +1,13 @@
+# https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.0.0/api/v1/index.html
+
 from google.cloud import aiplatform
 import kfp
-from kfp.v2 import compiler
+from kfp import compiler
 
-from google_cloud_pipeline_components import aiplatform as gcc_aip
+from google_cloud_pipeline_components.v1.dataset import TabularDatasetCreateOp
+from google_cloud_pipeline_components.v1.automl.training_job import AutoMLTabularTrainingJobRunOp
+from google_cloud_pipeline_components.v1.endpoint import EndpointCreateOp
+from google_cloud_pipeline_components.v1.endpoint import ModelDeployOp
 
 PROJECT_ID = 'argolis-rafaelsanchez-ml-dev'
 MY_STAGING_BUCKET = 'argolis-vertex-europewest4'
@@ -18,13 +23,13 @@ BIGQUERY_URI = 'bq://argolis-rafaelsanchez-ml-dev.ml_datasets_europewest4.ulb_'
 
 @kfp.dsl.pipeline(name='fraud-detection-demo-gccaip-europewest4')
 def pipeline():
-  dataset_create_op = gcc_aip.TabularDatasetCreateOp(
+  dataset_create_op = TabularDatasetCreateOp(
       project=PROJECT_ID, 
       location=LOCATION,
       display_name='fraud-detection-demo-gccaip',
       bq_source=BIGQUERY_URI)
 
-  training_op = gcc_aip.AutoMLTabularTrainingJobRunOp(
+  training_op = AutoMLTabularTrainingJobRunOp(
       project=PROJECT_ID,
       location=LOCATION,
       display_name='fraud-detection-demo-gccaip',
@@ -65,13 +70,13 @@ def pipeline():
       target_column = "Class"
   )
 
-  endpoint_op = gcc_aip.EndpointCreateOp(
+  endpoint_op = EndpointCreateOp(
         project=PROJECT_ID,
         location=LOCATION,
         display_name="fraud-detection-demo_endpoint",
     )
 
-  _ = gcc_aip.ModelDeployOp(
+  _ = ModelDeployOp(
         model=training_op.outputs["model"],
         endpoint=endpoint_op.outputs["endpoint"],
         dedicated_resources_machine_type="n1-standard-4",

@@ -1,5 +1,5 @@
 from kfp import dsl
-from kfp.v2.dsl import (
+from kfp.dsl import (
     component,
     InputPath,
     OutputPath,
@@ -34,8 +34,8 @@ TARGET = 'Class'
 # Preprocess component
 ##############
 @component(
-    base_image="gcr.io/deeplearning-platform-release/tf2-cpu.2-6:latest",
-    packages_to_install=['tensorflow_io==0.21.0']
+    base_image="tensorflow/tensorflow:2.13.0",
+    packages_to_install=['tensorflow_io==0.33.0']
 )
 def preprocess(
     # An input parameter of type string.
@@ -110,7 +110,7 @@ def preprocess(
 ##############
 @component(
     base_image='python:3.9', # Use a different base image.
-    packages_to_install=['tensorflow']
+    packages_to_install=['tensorflow==2.13.0']
 )
 def train(
     dataset: Input[Dataset],
@@ -248,13 +248,14 @@ def pipeline(message: str):
     dataset=preprocess_task.output,
     features_input=','.join(FEATURES),
     #message=preprocess_task.outputs['output_parameter'],
-    num_epochs=5)
+    num_epochs=5).set_cpu_limit('4').set_memory_limit('16G')
+    
   deploy_task = deploy(
     model = train_task.outputs['output_model']
   )
 
 # Compile and submit
-from kfp.v2 import compiler
+from kfp import compiler
 from google.cloud import aiplatform
 
 # Compile and run the pipeline

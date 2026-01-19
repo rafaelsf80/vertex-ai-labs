@@ -26,6 +26,8 @@ Output of pipeline with custom containers:
 
 This pipeline uses the ULB dataset (tabular detaset, fraud detection) with AutoML, using GCP operators. The three-step pipeline include loading data, training and prediction.
 
+Components doc can be found [here](https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.0.0/api/v1/index.html).
+
 Output of pipeline with GCP components:
 
 <img src="02-pipeline-gcp-operators/pipeline_gccaip.png" alt="Vertex pipelines result" width="300"/>
@@ -204,7 +206,7 @@ Setup:
 gcloud beta ai tensorboards create --display-name ml-in-the-cloud-rafaelsanchez --project argolis-rafaelsanchez-ml-dev
 Created Vertex AI Tensorboard: projects/989788194604/locations/europe-west4/tensorboards/3449511023961178112
 ```
-3. Create a service account for the Tensorboard service. It must have the Storage Admin role (`roles/storage.admin`) and Vertex AI User role (`roles/aiplatform.user`) associated with the Tensorboard service.
+3. Create a service account for the Tensorboard service. It must have the Storage Admin role (`roles/storage.admin`), Data Editor role (`roles/bigquery.dataEditor`) and Vertex AI User role (`roles/aiplatform.user`).
 
 > If you use Vertex AI Workbench, note there are actually **two service accounts**: the **compute engine service account**, which executes the full pipeline, and needs the  Service Account User and Vertex AI User roles; and the **service account specific for the training step** that requires Service Account User role, Storage Admin role, Vertex AI User role, BQ Read Session Userrole (`bigquery.readsessions.create`) and BigQuery Data Editor. All of them are required since thet training step must read from the dataset (and BigQuery) and must write in GCS for the Tensorboard service.
 
@@ -231,6 +233,7 @@ gcloud artifacts repositories create ml-pipelines-repo --repository-format=docke
 gcloud auth configure-docker europe-west4-docker.pkg.dev
 gcloud builds submit --tag europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/13-training-tables-xgboost-noprebuilt
 ```
+3. Service account must contains permission to access Artifact registry
 
 Instructions:
 ```sh
@@ -246,7 +249,9 @@ Vertex AI provides tools for experiment tracking and metrics visualization:
 
 1. **Vertex AI experiments**: logs different parameters.
 
-2. **Lineage tracking**: shows tracking of a model with the raw dataset and the preprocessed dataset.
+2. **Lineage tracking**: shows tracking of a model with the raw dataset and the preprocessed dataset. 
+
+> Make sure you create dataset and model in your project.
 
 3. **Cloud profiler**: implements a cloud profiler on Tensorboard to measure CPU/GPU metrics and others. Make sure the ervice account must have the following permissions: Storage Admin (to write logs to GCS); Vertex AI User; Cloud Profiler Agent (otherwise tensorboard will be empty)
 

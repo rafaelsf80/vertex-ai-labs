@@ -33,6 +33,7 @@ hp_job = aiplatform.HyperparameterTuningJob(
         'activation': hpt.CategoricalParameterSpec(values=['relu', 'tanh']),  # not used
         'batch_size': hpt.DiscreteParameterSpec(values=[32, 64, 128], scale='linear') # not used
     },
+    #search_algorithm="random",  "grid", "default" is bayesian
     max_trial_count=16,
     parallel_trial_count=4,    
     )

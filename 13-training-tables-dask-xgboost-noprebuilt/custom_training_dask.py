@@ -9,7 +9,7 @@ OUTPUT_URI = f"{BUCKET_URI}/output"
 LOCATION = 'europe-west4'
 
 TRAIN_IMAGE = f'europe-west4-docker.pkg.dev/{PROJECT_ID}/ml-pipelines-repo/13-training-tables-xgboost-noprebuilt:latest'
-DEPLOY_IMAGE = "europe-west4-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-8:latest"
+DEPLOY_IMAGE = "us-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-8:latest"
 
 aiplatform.init(project=PROJECT_ID, staging_bucket=BUCKET_URI, location=LOCATION)
 
