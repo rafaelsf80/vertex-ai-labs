@@ -4,12 +4,14 @@ import os
 from google.cloud import aiplatform
 
 PROJECT_ID = 'argolis-rafaelsanchez-ml-dev'
-BUCKET_URI = 'gs://argolis-vertex-europewest4'
+BUCKET_URI = 'gs://argolis-vertex-me-central1'
 OUTPUT_URI = f"{BUCKET_URI}/output"
-LOCATION = 'europe-west4'
+LOCATION = 'me-central1'
 
-TRAIN_IMAGE = f'europe-west4-docker.pkg.dev/{PROJECT_ID}/ml-pipelines-repo/13-training-tables-xgboost-noprebuilt:latest'
-DEPLOY_IMAGE = "us-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-8:latest"
+#TRAIN_IMAGE = f'europe-west4-docker.pkg.dev/{PROJECT_ID}/ml-pipelines-repo/13-training-tables-xgboost-noprebuilt:latest'
+TRAIN_IMAGE = 'me-central1-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-workloads-qatar/tf-cpu.2-9:latest'
+#DEPLOY_IMAGE = "us-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-8:latest"
+DEPLOY_IMAGE = "me-central1-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-workloads-qatar-prediction/tf-cpu.2-9:latest"
 
 aiplatform.init(project=PROJECT_ID, staging_bucket=BUCKET_URI, location=LOCATION)
 
@@ -19,10 +21,10 @@ custom_container_training_job = aiplatform.CustomContainerTrainingJob(
     container_uri=TRAIN_IMAGE,
 )
 
-custom_container_training_job.run(
+model = custom_container_training_job.run(
     base_output_dir=OUTPUT_URI,
     replica_count=2,
-    machine_type="n1-standard-4",
+    machine_type="n2-standard-4",
     enable_dashboard_access=True,
     enable_web_access=True,
     sync=True,
@@ -47,3 +49,9 @@ try:
     )
 except Exception as e:
     print(e)
+
+print(model)
+
+# Deploy endpoint
+endpoint = model.deploy(machine_type='n2-standard-4')
+print(endpoint.resource_name)

@@ -1,8 +1,10 @@
 # gcloud artifacts repositories create ml-pipelines-repo --repository-format=docker --location=europe-west4 --description="ML pipelines repository"
 # gcloud auth configure-docker europe-west4-docker.pkg.dev
 # gcloud builds submit --tag europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/13-training-tables-xgboost-noprebuilt
+# gcloud builds submit --tag me-central1-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-workloads-qatar/13-training-tables-xgboost-noprebuilt
 
-FROM us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-9:latest
+# FROM us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-9:latest
+FROM me-central1-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-workloads-qatar/tf-cpu.2-9:latest
 WORKDIR /root
 
 # Install sudo
