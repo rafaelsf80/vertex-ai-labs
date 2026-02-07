@@ -237,7 +237,7 @@ gcloud auth configure-docker me-central1-docker.pkg.dev
 gcloud builds submit --tag me-central1-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-workloads-qatar-training/13-training-tables-xgboost-noprebuilt
 ```
 2. Service account must contain permission to access **Artifact Registry**.
-3. Run the training job, which will automatically create a model into **Model Registry**:
+3. Run the training job, which will automatically create a model into **Model Cloud Storage**:
 ```sh
 python3 13-training-tables-dask-xgboost-noprebuilt/custom_training_dask.py
 ```
@@ -251,6 +251,8 @@ gcloud builds submit --tag me-central1-docker.pkg.dev/argolis-rafaelsanchez-ml-d
 6. Upload the model to **Model Registry** and deploy the model to **Vertex AI Prediction**:
 ```sh
 python3 13-training-tables-dask-xgboost-noprebuilt/online_predict.py
+# Endpoint model deployed. Resource name: projects/989788194604/locations/me-central1/endpoints/1374028894906089472
+# Predictions: [-0.3882404267787933, -0.3882404267787933]
 ```
 
 For more information about custom training in Vertex, visit the [official documentation](https://cloud.google.com/vertex-ai/docs/training/custom-training).
