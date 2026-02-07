@@ -1,4 +1,4 @@
-# https://github.com/GoogleCloudPlatform/vertex-ai-samples/blob/main/notebooks/official/training/xgboost_data_parallel_training_on_cpu_using_dask.ipynb
+# Reference: https://github.com/GoogleCloudPlatform/vertex-ai-samples/blob/main/notebooks/official/training/xgboost_data_parallel_training_on_cpu_using_dask.ipynb
 
 import os
 from google.cloud import aiplatform
@@ -8,16 +8,14 @@ BUCKET_URI = 'gs://argolis-vertex-me-central1'
 OUTPUT_URI = f"{BUCKET_URI}/output"
 LOCATION = 'me-central1'
 
-#TRAIN_IMAGE = f'europe-west4-docker.pkg.dev/{PROJECT_ID}/ml-pipelines-repo/13-training-tables-xgboost-noprebuilt:latest'
-TRAIN_IMAGE = 'me-central1-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-workloads-qatar/tf-cpu.2-9:latest'
-#DEPLOY_IMAGE = "us-docker.pkg.dev/vertex-ai/prediction/tf2-cpu.2-8:latest"
-DEPLOY_IMAGE = "me-central1-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-workloads-qatar-prediction/tf-cpu.2-9:latest"
+TRAIN_IMAGE = "me-central1-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-workloads-qatar-training/13-training-tables-xgboost-noprebuilt"
+#DEPLOY_IMAGE = "me-central1-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-workloads-qatar-prediction/13-xgboost_dask"
 
 aiplatform.init(project=PROJECT_ID, staging_bucket=BUCKET_URI, location=LOCATION)
 
 custom_container_training_job = aiplatform.CustomContainerTrainingJob(
     display_name="xgboost_dask",
-    model_serving_container_image_uri=DEPLOY_IMAGE,
+    #model_serving_container_image_uri=DEPLOY_IMAGE, # Uncomment to upload model to Model Registry and deploy to an endpoint after training
     container_uri=TRAIN_IMAGE,
 )
 
@@ -52,6 +50,7 @@ except Exception as e:
 
 print(model)
 
-# Deploy endpoint
-endpoint = model.deploy(machine_type='n2-standard-4')
-print(endpoint.resource_name)
+# # Deploy endpoint
+# endpoint = model.deploy(machine_type='n2-standard-4')
+# print(endpoint.resource_name)
+

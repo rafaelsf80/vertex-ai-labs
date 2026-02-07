@@ -223,24 +223,37 @@ Notes:
 
 ## Lab 13: Vertex distributed custom training (Iris dataset and Dask) with custom containers
 
-Vertex distriuted custom training job over 2xCPU, using XGBoost **custom containers** (for training), the [Dask framework](https://xgboost.readthedocs.io/en/latest/tutorials/dask.html) and the [tabular iris dataset](https://archive.ics.uci.edu/ml/datasets/iris). This lab uses two CPUs.
+Vertex distributed custom training job over two `n2-standard-4` machines, using XGBoost **custom containers** (for training), the [Dask framework](https://xgboost.readthedocs.io/en/latest/tutorials/dask.html) and the [tabular iris dataset](https://archive.ics.uci.edu/ml/datasets/iris). This lab uses two machines `n2-standard-4` with distributed CPU training (no GPUs).
+
+This lab **does not use any pre-built containers**, either for training or prediction. All containers are custom, and are served and stored in **Artifact Registry** in the `me-central1` region.
+
+The dataset is downloaded from a public bucket in Google Cloud `gs://cloud-samples-data/ai-platform/iris/iris_data.csv`. Alternatively, you can copy the public table `bigquery-public-data.ml_datasets.iris` into your project and region. Easiest way for this given the small table size is to export as CSV to GCS and then upload it into BigQuery with schema autodetect.
 
 Setup:
-1. The dataset is downloaded from a bucket in Google Cloud `gs://cloud-samples-data/ai-platform/iris/iris_data.csv`. Alternatively, you can copy the public table `bigquery-public-data.ml_datasets.iris` into your project and region. Easiest way for this table size is to export as CSV to GCS and then upload it into BigQuery with schema autodetect.
-2. Create the repository and submit the custom container to **Artifact Registry**:
+1. Create the repository for training and submit the custom container to **Artifact Registry**:
 ```sh
-gcloud artifacts repositories create ml-pipelines-repo --repository-format=docker --location=europe-west4 --description="ML pipelines repository"
-gcloud auth configure-docker europe-west4-docker.pkg.dev
-gcloud builds submit --tag europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/13-training-tables-xgboost-noprebuilt
+gcloud artifacts repositories create ml-workloads-qatar-training --repository-format=docker --location=me-central1 --description="ML pipelines repository"
+gcloud auth configure-docker me-central1-docker.pkg.dev
+gcloud builds submit --tag me-central1-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-workloads-qatar-training/13-training-tables-xgboost-noprebuilt
 ```
-3. Service account must contains permission to access Artifact registry
-
-Instructions:
+2. Service account must contain permission to access **Artifact Registry**.
+3. Run the training job, which will automatically create a model into **Model Registry**:
 ```sh
-python3 13-training-tables-iris/custom_training.py
+python3 13-training-tables-dask-xgboost-noprebuilt/custom_training_dask.py
+```
+4. Download manually the model (`model.bst`) from Google Cloud Storage and copy it into the `prediction/model` directory.
+5. Create the repository for prediction and submit the custom container to **Artifact Registry**:
+```sh
+gcloud artifacts repositories create ml-workloads-qatar-prediction --repository-format=docker --location=me-central1 --description="ML pipelines repository"
+gcloud auth configure-docker me-central1-docker.pkg.dev
+gcloud builds submit --tag me-central1-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-workloads-qatar-prediction/13-xgboost_dask
+```
+6. Upload the model to **Model Registry** and deploy the model to **Vertex AI Prediction**:
+```sh
+python3 13-training-tables-dask-xgboost-noprebuilt/online_predict.py
 ```
 
-For more information about custom training in Vertex, visit the [official documentation](https://cloud.google.com/vertex-ai/docs/training/custom-training) and [this github repo](https://github.com/rafaelsf80/vertex-custom-training)
+For more information about custom training in Vertex, visit the [official documentation](https://cloud.google.com/vertex-ai/docs/training/custom-training).
 
 
 ## Lab 14: Experiments and metrics visualization

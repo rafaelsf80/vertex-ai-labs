@@ -1,14 +1,12 @@
-# gcloud artifacts repositories create ml-pipelines-repo --repository-format=docker --location=europe-west4 --description="ML pipelines repository"
-# gcloud auth configure-docker europe-west4-docker.pkg.dev
-# gcloud builds submit --tag europe-west4-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-pipelines-repo/13-training-tables-xgboost-noprebuilt
-# gcloud builds submit --tag me-central1-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-workloads-qatar/13-training-tables-xgboost-noprebuilt
+# gcloud artifacts repositories create ml-workloads-qatar-training --repository-format=docker --location=me-central1 --description="ML pipelines repository"
+# gcloud auth configure-docker me-central1-docker.pkg.dev
+# gcloud builds submit --tag me-central1-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-workloads-qatar-training/13-training-tables-xgboost-noprebuilt
 
-# FROM us-docker.pkg.dev/vertex-ai/training/tf-cpu.2-9:latest
-FROM me-central1-docker.pkg.dev/argolis-rafaelsanchez-ml-dev/ml-workloads-qatar/tf-cpu.2-9:latest
+FROM python:3.10-slim-bullseye
 WORKDIR /root
 
-# Install sudo
-RUN apt-get update && apt-get -y install sudo
+# Install sudo and curl
+RUN apt-get update && apt-get -y install sudo curl gnupg
 
 # Update the keyring in order to run apt-get update.
 RUN rm -rf /usr/share/keyrings/cloud.google.gpg
@@ -22,8 +20,8 @@ RUN apt-get update && apt-get install -y telnet netcat iputils-ping net-tools
 # Determine the default Python version
 RUN echo python3 --version
 
-# Install Python packages using the identified version
-RUN python3 -m pip install 'xgboost>=1.4.2' 'dask-ml[complete]==2022.5.27' 'dask[complete]==2022.01.0' --upgrade
+# Install Python packages required for training
+RUN python3 -m pip install 'numpy<2.0.0' 'pandas<2.0.0' 'xgboost>=1.4.2' 'dask-ml[complete]==2022.5.27' 'dask[complete]==2022.01.0' --upgrade
 RUN python3 -m pip install dask==2022.01.0 distributed==2022.01.0 bokeh==2.4.3 dask-cuda==22.2.0 click==8.0.1 --upgrade
 RUN python3 -m pip install gcsfs --upgrade
 
